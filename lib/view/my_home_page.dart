@@ -75,6 +75,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
+                    width: width * 0.7 * 0.7,
+                    child: TextField(
+                      decoration:
+                          const InputDecoration(hintText: 'Tên file...'),
+                      controller: myHomeController.fileNameController,
+                      onChanged: (value) {
+                        myHomeController.onFileNameChange(value: value);
+                      },
+                    ),
+                  ),
+                  SizedBox(
                     height: 48,
                     child: Row(
                       children: [

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:record_video/extension/multiple_choice_extension.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
@@ -25,10 +26,12 @@ final timeItems = [
 
 class MyHomeController extends GetxController {
   TextEditingController urlController = TextEditingController();
+  TextEditingController fileNameController = TextEditingController();
 
   //obs
   var selectionTime = '1'.obs;
   var urlValue = ''.obs;
+  var fileName = ''.obs;
   var aiFeatureList = <MultiChoiceItem>[].obs;
 
   void initData() {
@@ -53,7 +56,7 @@ class MyHomeController extends GetxController {
       return;
     }
     final runCommandResult =
-        await runCommandLine(url: urlValue.value, fileName: 'abc');
+        await runCommandLine(url: urlValue.value, fileName: fileName.value);
     log('$runtimeType, runCommandResult: $runCommandResult ');
   }
 
@@ -61,8 +64,19 @@ class MyHomeController extends GetxController {
       {required String url, required String fileName}) async {
     Completer<bool> complete = Completer();
     final timeStamp = int.parse(selectionTime.value) * 60;
+    final directory = await getApplicationDocumentsDirectory();
+
+    final path = "${directory.path}\\Videos";
+
+    final ifDirectoryExist = await File(path).exists();
+
+    if (!ifDirectoryExist) {
+      var directory = await Directory(path).create(recursive: true);
+      log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
+    }
+
     final command =
-        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp video-%Y-%m-%d_%H-%M-%S.mp4';
+        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\${fileName.isNotEmpty ? fileName : 'video-%Y-%m-%d_%H-%M-%S'}.mp4';
     log('$runtimeType,  ${DateTime.now()} runCommandLine : $command ');
 
     ProcessResult result = Process.runSync(
@@ -82,6 +96,11 @@ class MyHomeController extends GetxController {
   void onUrlChange({required String value}) {
     log('$runtimeType, On url change value: $value');
     urlValue.value = value;
+  }
+
+  void onFileNameChange({required String value}) {
+    log('$runtimeType, On url change value: $value');
+    fileName.value = value;
   }
 
   void onClickExpand({required MultiChoiceItem aiFeature}) {
