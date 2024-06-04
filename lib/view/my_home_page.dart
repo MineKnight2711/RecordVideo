@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+
 // import 'package:media_kit_video/media_kit_video.dart';
 
 import '../models/multi_choice_item.dart';
@@ -24,13 +25,13 @@ class _MyHomePageState extends State<MyHomePage> {
   MyHomeController get myHomeController =>
       Get.put(MyHomeController(), permanent: false);
   late final Player player = Player(
-    configuration: const PlayerConfiguration(
-      // bufferSize: 5,
-      protocolWhitelist: ['tcp'],
-      logLevel: MPVLogLevel.debug,
-    ));
+      configuration: const PlayerConfiguration(
+    // bufferSize: 5,
+    protocolWhitelist: ['tcp'],
+    logLevel: MPVLogLevel.debug,
+  ));
 
- late final VideoController playerController = VideoController(
+  late final VideoController playerController = VideoController(
     player,
     configuration: const VideoControllerConfiguration(
       enableHardwareAcceleration: true,
@@ -39,9 +40,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-  //  player.open(Media('rtsp://admin:Insen181@10.10.1.105:554/Streaming/channels/102'));
+    //  player.open(Media('rtsp://admin:Insen181@10.10.1.105:554/Streaming/channels/102'));
     _registerListener();
     myHomeController.initData();
+
     super.initState();
   }
 
@@ -77,15 +79,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Row(
                       children: [
                         SizedBox(
-                            width: width * 0.7 * 0.7,
-                            child: TextField(
-                              decoration:
-                                  const InputDecoration(hintText: 'Rtsp url'),
-                              controller: myHomeController.urlController,
-                              onChanged: (value) {
-                                myHomeController.onUrlChange(value: value);
-                              },
-                            ),),
+                          width: width * 0.7 * 0.7,
+                          child: TextField(
+                            decoration:
+                                const InputDecoration(hintText: 'Rtsp url'),
+                            controller: myHomeController.urlController,
+                            onChanged: (value) {
+                              myHomeController.onUrlChange(value: value);
+                            },
+                          ),
+                        ),
                         const SizedBox(
                           width: 8,
                         ),
@@ -150,6 +153,14 @@ class _MyHomePageState extends State<MyHomePage> {
                             }),
                           ),
                         )),
+                        const Text(
+                          'phút',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -164,25 +175,34 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        InkWell(
-                          onTap: () {
-                            player.open(Media(myHomeController.urlValue.value));
-                            myHomeController.startRecord();
-                          },
-                          child: Container(
-                            height: 40,
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            decoration: BoxDecoration(
-                              color: Colors.amber,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Text('Bắt đầu',style:  TextStyle(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),),
-                          ),
-                        )
+                        Obx(() => InkWell(
+                              onTap: myHomeController.urlValue.isNotEmpty
+                                  ? () {
+                                      player.open(Media(
+                                          myHomeController.urlValue.value));
+                                      myHomeController.startRecord();
+                                    }
+                                  : null,
+                              child: Container(
+                                height: 40,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                decoration: BoxDecoration(
+                                  color: myHomeController.urlValue.isNotEmpty
+                                      ? Colors.amber
+                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Bắt đầu',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )),
                       ],
                     ),
                   ),
@@ -217,76 +237,92 @@ class _MyHomePageState extends State<MyHomePage> {
             //setting feature list
             Expanded(
               child: Container(
-                height: height,
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child:
-               Column(
-                 children: [
-                  Expanded(
-                    child:  Obx((){
-                    return ListView.separated(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        itemBuilder: (context, index) {
-                          final aiFeature = myHomeController.aiFeatureList[index];
-                          return AiFeatureItem(aiFeature:aiFeature,
-                            onCheckChange:(item){
-                              myHomeController.onCheckChange(aiFeature: item);
-                            },
-                            onClickExpand:(item){
-                              myHomeController.onClickExpand(aiFeature: item);
-                            },
-                            onClickAddData: (item){
-                              _showDialog(aiFeature:item,onPressAddData:(aiFeature,value){
-                                myHomeController.addData(aiFeature: aiFeature, data: value);
-                              });
-                            },
-                            onPressedDeleteData: (aiFeature,dataItem){
-                              myHomeController.removeData(aiFeature: aiFeature, data: dataItem);
-                            },
-
-                          );
-                        },
-                        separatorBuilder: (context, index) {
-                          return const SizedBox(
-                            height: 8,
-                          );
-                        },
-                        itemCount: myHomeController.aiFeatureList.value.length
-                    );
-                  }),),
-                   Container(
-                     margin: EdgeInsets.symmetric(vertical: 24),
-                     height: 40,
-                     child:
-                     TextButton(
-                       onPressed: () {
-
-                       },
-                       child:  Container(
-                         decoration: BoxDecoration(
-                             color: Colors.amber,
-                           borderRadius: BorderRadius.circular(8)
-                         ),
-                         padding: const EdgeInsets.symmetric(horizontal: 100,vertical: 8),
-                         child: const Text('Lưu',style: TextStyle(
-                           color: Colors.black,
-                           fontSize: 16,
-                         ),),
-                       ),
-                     ),)
-                 ],
-               )
-              ),
+                  height: height,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Obx(() {
+                          return ListView.separated(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              itemBuilder: (context, index) {
+                                final aiFeature =
+                                    myHomeController.aiFeatureList[index];
+                                return AiFeatureItem(
+                                  aiFeature: aiFeature,
+                                  onCheckChange: (item) {
+                                    myHomeController.onCheckChange(
+                                        aiFeature: item);
+                                  },
+                                  onClickExpand: (item) {
+                                    myHomeController.onClickExpand(
+                                        aiFeature: item);
+                                  },
+                                  onClickAddData: (item) {
+                                    _showDialog(
+                                        aiFeature: item,
+                                        onPressAddData: (aiFeature, value) {
+                                          myHomeController.addData(
+                                              aiFeature: aiFeature,
+                                              data: value);
+                                        });
+                                  },
+                                  onPressedDeleteData: (aiFeature, dataItem) {
+                                    myHomeController.removeData(
+                                        aiFeature: aiFeature, data: dataItem);
+                                  },
+                                );
+                              },
+                              separatorBuilder: (context, index) {
+                                return const SizedBox(
+                                  height: 8,
+                                );
+                              },
+                              itemCount: myHomeController.aiFeatureList.length);
+                        }),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 24),
+                        height: 40,
+                        child: Obx(
+                          () => TextButton(
+                            onPressed: myHomeController.urlValue.isNotEmpty &&
+                                    !myHomeController.checkFeatureList()
+                                ? () {}
+                                : null,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                  color: myHomeController.urlValue.isNotEmpty &&
+                                          !myHomeController.checkFeatureList()
+                                      ? Colors.amber
+                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 100, vertical: 8),
+                              child: const Text(
+                                'Lưu',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  )),
             ),
-
-
           ],
         ),
       ),
     );
   }
 
-  void _showDialog({required MultiChoiceItem aiFeature, required Function(MultiChoiceItem,String) onPressAddData, }){
+  void _showDialog({
+    required MultiChoiceItem aiFeature,
+    required Function(MultiChoiceItem, String) onPressAddData,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -298,17 +334,18 @@ class _MyHomePageState extends State<MyHomePage> {
               title: const Text("Thêm dữ liệu"),
               actions: [
                 Container(
-                  color:Colors.transparent,
-                  child:  TextField(
-                    decoration:
-                    const InputDecoration(hintText: 'Thêm dữ liệu'),
+                  color: Colors.transparent,
+                  child: TextField(
+                    decoration: const InputDecoration(hintText: 'Thêm dữ liệu'),
                     controller: textController,
                   ),
                 ),
-                const SizedBox(height: 24,),
+                const SizedBox(
+                  height: 24,
+                ),
                 SizedBox(
                   height: 40,
-                  child:  Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
@@ -321,8 +358,8 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: () {
                           Navigator.pop(context);
                           log('$runtimeType, data: ${textController.text}');
-                          if(textController.text.isNotEmpty == true){
-                            onPressAddData.call(aiFeature,textController.text);
+                          if (textController.text.isNotEmpty == true) {
+                            onPressAddData.call(aiFeature, textController.text);
                           }
                         },
                         child: const Text("Thêm"),
