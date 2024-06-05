@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -14,6 +16,7 @@ class MyHomePage extends GetView<MyHomeController> {
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
+    log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${controller.videoPathObs.value}  ');
     return Scaffold(
       body: Container(
         color: Colors.grey.withOpacity(0.1),
@@ -29,96 +32,98 @@ class MyHomePage extends GetView<MyHomeController> {
                 horizontal: 24,
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: width * 0.7 * 0.7,
-                    child: TextField(
-                      inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                            RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
-                      ],
-                      decoration:
-                          const InputDecoration(hintText: 'Tên file...'),
-                      controller: controller.fileNameController,
-                      onChanged: (value) {
-                        controller.onFileNameChange(value: value);
-                      },
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: width * 0.7 * 0.7,
+                      child: TextField(
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
+                        ],
+                        decoration:
+                            const InputDecoration(hintText: 'Tên file...'),
+                        controller: controller.fileNameController,
+                        onChanged: (value) {
+                          controller.onFileNameChange(value: value);
+                        },
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    height: 48,
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: width * 0.7 * 0.7,
-                          child: TextField(
-                            decoration:
-                                const InputDecoration(hintText: 'Rtsp url'),
-                            controller: controller.urlController,
-                            onChanged: (value) {
-                              controller.onUrlChange(value: value);
-                            },
+                    SizedBox(
+                      height: 48,
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: width * 0.7 * 0.7,
+                            child: TextField(
+                              decoration:
+                                  const InputDecoration(hintText: 'Rtsp url'),
+                              controller: controller.urlController,
+                              onChanged: (value) {
+                                controller.onUrlChange(value: value);
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(
-                          width: 8,
-                        ),
-                        Expanded(
-                          child: Obx(
-                            () {
-                              return DropDown(
-                                  title: 'Chọn thời gian',
-                                  items: List.generate(
-                                      5, (index) => (index + 1).toString()),
-                                  selectedValue:
-                                      controller.selectionTimeObs.value,
-                                  onChanged: (value) {
-                                    controller.onTimeChange(value: value);
-                                  });
-                            },
+                          const SizedBox(
+                            width: 8,
                           ),
-                        ),
-                        const Text(
-                          'phút',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                          Expanded(
+                            child: Obx(
+                              () {
+                                return DropDown(
+                                    title: 'Chọn thời gian',
+                                    items: List.generate(
+                                        5, (index) => (index + 1).toString()),
+                                    selectedValue:
+                                        controller.selectionTimeObs.value,
+                                    onChanged: (value) {
+                                      controller.onTimeChange(value: value);
+                                    });
+                              },
+                            ),
                           ),
-                        ),
-                      ],
+                          const Text(
+                            'phút',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(
-                    height: 16,
-                  ),
-
-                  //button
-                  const PlayButton(),
-                  const SizedBox(
-                    height: 16,
-                  ),
-                  // camera view
-                  Container(
-                    width: width * 0.6,
-                    height: width * 0.6 * 9 / 16,
-                    // color: Colors.grey.withOpacity(0.5),
-                    alignment: Alignment.topLeft,
-                    child: Video(
-                      width: (width / 2) * 16 / 9,
-                      wakelock: true,
-                      aspectRatio: 16 / 9,
-                      controller: controller.playerController,
-                      // controls: (state) {
-                      //   log('$runtimeType, VideoState : $state');
-                      //   return const SizedBox();
-                      // },
+                    const SizedBox(
+                      height: 16,
                     ),
-                  ),
-                ],
-              ),
+
+                    //button
+                    const PlayButton(),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    // camera view
+                    Container(
+                      width: width * 0.6,
+                      height: width * 0.6 * 9 / 16,
+                      // color: Colors.grey.withOpacity(0.5),
+                      alignment: Alignment.topLeft,
+                      child: Video(
+                        width: (width / 2) * 16 / 9,
+                        wakelock: true,
+                        aspectRatio: 16 / 9,
+                        controller: controller.playerController,
+                        controls: (state) {
+                          return Obx(
+                            () => controller.videoPathObs.value.isEmpty
+                                ? const SizedBox()
+                                : AdaptiveVideoControls(state),
+                          );
+                        },
+                      ),
+                    ),
+                  ]),
             ),
             Container(
               height: height,

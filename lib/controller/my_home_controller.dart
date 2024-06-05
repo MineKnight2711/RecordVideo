@@ -18,7 +18,7 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 10;
+const int recordMinutes = 5;
 
 class MyHomeController extends GetxController {
   late final Player player;
@@ -64,8 +64,11 @@ class MyHomeController extends GetxController {
   }
 
   void _initData() {
-    urlValueObs.value =
+    fileNameController.text = fileNameObs.value = _formattedDate();
+
+    urlController.text = urlValueObs.value =
         "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
+
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
 
@@ -132,10 +135,8 @@ class MyHomeController extends GetxController {
 
     final path = await _createDirectory();
 
-    final saveFileName = fileName.isNotEmpty ? fileName : _formattedDate();
-
     final command =
-        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$saveFileName.mp4';
+        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$fileName.mp4';
     log('$runtimeType,  ${DateTime.now()} runCommandLine : $command ');
 
     await Process.run(
@@ -146,8 +147,7 @@ class MyHomeController extends GetxController {
         complete.complete(true);
         isExecuting.value = false;
         fileNameController.text = '';
-
-        videoPathObs.value = "$path\\$saveFileName.mp4";
+        videoPathObs.value = "$path\\$fileName.mp4";
         folderPathObs.value = path;
         log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPathObs.value}  ');
       } else {
