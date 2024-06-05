@@ -42,7 +42,7 @@ class MyHomePage extends GetView<MyHomeController> {
                     child: TextField(
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                            RegExp("[0-9a-zA-Z ]")),
+                            RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
                       ],
                       decoration:
                           const InputDecoration(hintText: 'Tên file...'),
