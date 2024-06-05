@@ -18,15 +18,15 @@ class PlayButton extends GetView<MyHomeController> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Obx(() {
-            if (controller.videoPath.isEmpty) {
+            if (controller.videoPathObs.isEmpty) {
               return InkWell(
-                onTap: controller.urlValue.isNotEmpty
+                onTap: controller.urlValueObs.isNotEmpty
                     ? (!controller.isExecuting.value
                         ? () async {
                             final recordResult = await controller.startRecord();
                             if (recordResult) {
                               Get.snackbar("",
-                                  "Đã ghi video vào thư mục: ${controller.videoPath.value}");
+                                  "Đã ghi video vào thư mục: ${controller.videoPathObs.value}");
                               controller.player
                                   .stop()
                                   .whenComplete(() => controller.replay());
@@ -40,7 +40,7 @@ class PlayButton extends GetView<MyHomeController> {
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
-                    color: controller.urlValue.isNotEmpty
+                    color: controller.urlValueObs.isNotEmpty
                         ? (controller.isExecuting.value
                             ? Colors.grey
                             : Colors.amber)

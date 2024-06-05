@@ -15,3 +15,13 @@ class MultiChoiceItem {
     this.isExpanded,
   });
 }
+
+extension MultiChoiceItemX on MultiChoiceItem{
+  List<String> getEvents(){
+    List<String> result = [];
+    for(DataItem item in data){
+      result.add(item.value ?? '');
+    }
+    return result;
+  }
+}

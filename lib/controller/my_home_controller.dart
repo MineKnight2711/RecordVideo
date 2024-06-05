@@ -11,20 +11,13 @@ import 'package:record_video/extension/multiple_choice_extension.dart';
 import 'package:uuid/uuid.dart';
 import '../models/models.dart';
 
-const humanDetect = 'human_detect';
-const crowdDetect = 'crowd_detect';
-const licensePlate = 'license_plate';
-const faceDetect = 'face_detect';
-const fireDetect = 'fire_detect';
-const fallDetect = 'fall_detect';
+const humanDetect = 'HUMAN_DETECTED';
+const crowdDetect = 'CROWD_DETECTED';
+const licensePlate = 'LICENSE_PLATE_DETECTED';
+const faceDetect = 'FACE_DETECTED';
+const fireDetect = 'FIRE_DETECTED';
+const fallDetect = 'FALLING_DETECTED';
 
-final timeItems = [
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-];
 const int recordMinutes = 60;
 
 class MyHomeController extends GetxController {
@@ -37,10 +30,10 @@ class MyHomeController extends GetxController {
 
   //obs
   final RxBool isExecuting = false.obs;
-  var selectionTime = '1'.obs;
-  var urlValue = ''.obs;
+  var selectionTimeObs = '1'.obs;
+  var urlValueObs = ''.obs;
   var fileNameObs = ''.obs;
-  var videoPath = ''.obs;
+  var videoPathObs = ''.obs;
 
   var aiFeatureList = <MultiChoiceItem>[].obs;
 
@@ -70,7 +63,7 @@ class MyHomeController extends GetxController {
   }
 
   void _initData() {
-    urlValue.value =
+    urlValueObs.value =
         "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
@@ -81,13 +74,13 @@ class MyHomeController extends GetxController {
 
   // handle value change
   void onTimeChange({required String value}) {
-    selectionTime.value = value;
-    log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTime.value}');
+    selectionTimeObs.value = value;
+    log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTimeObs.value}');
   }
 
   void replay() async {
     await player
-        .open(Media("file:///${videoPath.value}"), play: false)
+        .open(Media("file:///${videoPathObs.value}"), play: false)
         .whenComplete(
           () => player.stream.completed.listen((event) {
             log('$runtimeType,  ${DateTime.now()} replay completed: $event');
@@ -99,10 +92,10 @@ class MyHomeController extends GetxController {
   }
 
   Future<bool> startRecord() async {
-    log('$runtimeType, start record url: ${urlValue.value}, fileName  ');
-    player.open(Media(urlValue.value));
+    log('$runtimeType, start record url: ${urlValueObs.value}, fileName  ');
+    player.open(Media(urlValueObs.value));
     final runCommandResult =
-        await runCommandLine(url: urlValue.value, fileName: fileNameObs.value);
+        await runCommandLine(url: urlValueObs.value, fileName: fileNameObs.value);
     log('$runtimeType, runCommandResult: $runCommandResult ');
     return runCommandResult;
   }
@@ -128,7 +121,7 @@ class MyHomeController extends GetxController {
 
     Completer<bool> complete = Completer();
 
-    final timeStamp = int.parse(selectionTime.value) * recordMinutes;
+    final timeStamp = int.parse(selectionTimeObs.value) * recordMinutes;
 
     final path = await _createDirectory();
 
@@ -147,9 +140,9 @@ class MyHomeController extends GetxController {
         isExecuting.value = false;
         fileNameController.text = fileNameObs.value = '';
 
-        videoPath.value = "$path\\$saveFileName.mp4";
+        videoPathObs.value = "$path\\$saveFileName.mp4";
 
-        log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPath.value}  ');
+        log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPathObs.value}  ');
       } else {
         complete.complete(false);
         log('$runtimeType,  ${DateTime.now()} runCommandLine error: ${result.exitCode}  ');
@@ -165,7 +158,7 @@ class MyHomeController extends GetxController {
 
   void onUrlChange({required String value}) {
     log('$runtimeType, On url change value: $value');
-    urlValue.value = value;
+    urlValueObs.value = value;
   }
 
   void onFileNameChange({required String value}) {
@@ -185,11 +178,46 @@ class MyHomeController extends GetxController {
     aiFeatureList.value = result;
   }
 
-  void addData({required MultiChoiceItem aiFeature, required String data}) {
+  void exportData() {
+    List<DetectionInfo> detections = [];
+    for (var aiFeature in aiFeatureList) {
+      if (aiFeature.isSelected == true && aiFeature.data.isNotEmpty == true) {
+        detections.add(DetectionInfo(type: aiFeature.id,
+            events: aiFeature.getEvents()
+        ),);
+      }
+    }
+    VideoInfo videoInfo = VideoInfo(
+      createdTime: DateTime
+          .now()
+          .millisecondsSinceEpoch,
+      detections: detections,
+      duration: int.parse(selectionTimeObs.value) * recordMinutes,
+      videoName: fileNameObs.value,
+    );
+    /*
+    {
+	"video_name":<string>,
+	"duration":<int>,
+	"detections":[
+		{
+		 "type":<string>,
+		 "events":[<string>]
+		}
+	],
+	"created_time":<int>
+}
+     */
+    log('$runtimeType, Export data: ${videoInfo.toString()}');
+  }
+
+  void addData({required MultiChoiceItem aiFeature, required String data, required String countEvent}) {
     final result = <MultiChoiceItem>[];
     for (var element in aiFeatureList) {
       if (element.id == aiFeature.id) {
-        element.data.add(DataItem(id: const Uuid().v1(), value: data));
+        for(int i = 0;i<int.parse(countEvent);i++){
+          element.data.add(DataItem(id: const Uuid().v1(), value: data));
+        }
       }
       result.add(element);
     }
@@ -254,7 +282,7 @@ class MyHomeController extends GetxController {
     ));
     result.add(MultiChoiceItem(
       id: fireDetect,
-      title: 'Fire Fetect',
+      title: 'Fire Detect',
       isSelected: false,
       isExpanded: true,
       data: [],

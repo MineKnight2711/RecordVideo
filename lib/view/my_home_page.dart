@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:record_video/widgets/dropdown.dart';
 import '../models/multi_choice_item.dart';
 import 'ai_feature_item.dart';
 import '../controller/my_home_controller.dart';
+import 'ai_feature_list.dart';
 import 'buttons.dart';
 
 // link rtsp
@@ -70,66 +72,16 @@ class MyHomePage extends GetView<MyHomeController> {
                         const SizedBox(
                           width: 8,
                         ),
-                        Expanded(
-                            child: SizedBox(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.black.withOpacity(0.2),
-                                  width: 1.0,
-                                ),
-                              ),
-                            ),
-                            height: 48,
-                            child: Obx(() {
-                              return DropdownButtonHideUnderline(
-                                child: DropdownButton2<String>(
-                                  isExpanded: true,
-                                  hint: const Row(
-                                    children: [
-                                      SizedBox(
-                                        width: 4,
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          'Chọn thời gian',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  items: timeItems
-                                      .map(
-                                        (String item) =>
-                                            DropdownMenuItem<String>(
-                                          value: item,
-                                          child: Text(
-                                            item,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.black,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  value: controller.selectionTime.value,
-                                  onChanged: (value) {
-                                    controller.onTimeChange(value: value ?? '');
-                                  },
-                                ),
-                              );
-                            }),
-                          ),
-                        )),
+                        Expanded(child:Obx((){
+                          return  DropDown(
+                              title:  'Chọn thời gian',
+                              items:List.generate(5, (index) => (index+1).toString()),
+                              selectedValue:controller.selectionTimeObs.value,
+                              onChanged:(value){
+                                controller.onTimeChange(value: value);
+                              }
+                          );
+                        },),),
                         const Text(
                           'phút',
                           style: TextStyle(
@@ -179,133 +131,12 @@ class MyHomePage extends GetView<MyHomeController> {
             ),
             //setting feature list
             Expanded(
-              child: Container(
-                  height: height,
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Obx(() {
-                          return ListView.separated(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              itemBuilder: (context, index) {
-                                final aiFeature =
-                                    controller.aiFeatureList[index];
-                                return AiFeatureItem(
-                                  aiFeature: aiFeature,
-                                  onCheckChange: (item) {
-                                    controller.onCheckChange(aiFeature: item);
-                                  },
-                                  onClickExpand: (item) {
-                                    controller.onClickExpand(aiFeature: item);
-                                  },
-                                  onClickAddData: (item) {
-                                    _showDialog(
-                                        aiFeature: item,
-                                        onPressAddData: (aiFeature, value) {
-                                          controller.addData(
-                                              aiFeature: aiFeature,
-                                              data: value);
-                                        });
-                                  },
-                                  onPressedDeleteData: (aiFeature, dataItem) {
-                                    controller.removeData(
-                                        aiFeature: aiFeature, data: dataItem);
-                                  },
-                                );
-                              },
-                              separatorBuilder: (context, index) {
-                                return const SizedBox(
-                                  height: 8,
-                                );
-                              },
-                              itemCount: controller.aiFeatureList.length);
-                        }),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 24),
-                        height: 40,
-                        child: Obx(
-                          () => TextButton(
-                            onPressed: controller.urlValue.isNotEmpty &&
-                                    !controller.checkFeatureList() &&
-                                    controller.videoPath.value.isNotEmpty
-                                ? () {}
-                                : null,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                  color: controller.urlValue.isNotEmpty &&
-                                          !controller.checkFeatureList() &&
-                                          controller.videoPath.value.isNotEmpty
-                                      ? Colors.amber
-                                      : Colors.grey,
-                                  borderRadius: BorderRadius.circular(8)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 100, vertical: 8),
-                              child: const Text(
-                                'Lưu',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                    ],
-                  )),
+                child: AiFeatureList(
+                  controller:controller,
+                )
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showDialog({
-    required MultiChoiceItem aiFeature,
-    required Function(MultiChoiceItem, String) onPressAddData,
-  }) {
-    TextEditingController textController = TextEditingController();
-    Get.dialog(
-      AlertDialog(
-        title: const Text("Thêm dữ liệu"),
-        actions: [
-          Container(
-            color: Colors.transparent,
-            child: TextField(
-              decoration: const InputDecoration(hintText: 'Thêm dữ liệu'),
-              controller: textController,
-            ),
-          ),
-          const SizedBox(
-            height: 24,
-          ),
-          SizedBox(
-            height: 40,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Get.back();
-                  },
-                  child: const Text("Huỷ"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Get.back();
-                    log('$runtimeType, data: ${textController.text}');
-                    if (textController.text.isNotEmpty == true) {
-                      onPressAddData.call(aiFeature, textController.text);
-                    }
-                  },
-                  child: const Text("Thêm"),
-                ),
-              ],
-            ),
-          )
-        ],
       ),
     );
   }
