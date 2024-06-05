@@ -116,7 +116,6 @@ class AiFeatureItem extends StatelessWidget {
           ]
         ],
       ),
-      // child: ,
     );
   }
 }

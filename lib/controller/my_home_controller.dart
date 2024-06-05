@@ -25,6 +25,7 @@ final timeItems = [
   '4',
   '5',
 ];
+const int recordMinutes = 60;
 
 class MyHomeController extends GetxController {
   late final Player player;
@@ -38,9 +39,11 @@ class MyHomeController extends GetxController {
   final RxBool isExecuting = false.obs;
   var selectionTime = '1'.obs;
   var urlValue = ''.obs;
-  var fileName = ''.obs;
+  var fileNameObs = ''.obs;
   var videoPath = ''.obs;
+
   var aiFeatureList = <MultiChoiceItem>[].obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -51,7 +54,6 @@ class MyHomeController extends GetxController {
   void _initControllerAndPlayer() {
     player = Player(
         configuration: const PlayerConfiguration(
-      // bufferSize: 5,
       protocolWhitelist: ['tcp'],
       logLevel: MPVLogLevel.debug,
     ));
@@ -61,6 +63,7 @@ class MyHomeController extends GetxController {
         enableHardwareAcceleration: true,
       ),
     );
+
     player.stream.log.listen((data) {
       log('$runtimeType, data: ${data.text}');
     });
@@ -82,28 +85,29 @@ class MyHomeController extends GetxController {
     log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTime.value}');
   }
 
-  void replay({required String videoPath}) async {
-    await player.open(Media("file:///$videoPath")).whenComplete(
-        () => log('$runtimeType,  ${DateTime.now()} replay video'));
+  void replay() async {
+    await player
+        .open(Media("file:///${videoPath.value}"), play: false)
+        .whenComplete(
+          () => player.stream.completed.listen((event) {
+            log('$runtimeType,  ${DateTime.now()} replay completed: $event');
+          }),
+        )
+        .catchError((e) {
+      log('$runtimeType,  ${DateTime.now()} replay error: $e');
+    });
   }
 
   Future<bool> startRecord() async {
     log('$runtimeType, start record url: ${urlValue.value}, fileName  ');
+    player.open(Media(urlValue.value));
     final runCommandResult =
-        await runCommandLine(url: urlValue.value, fileName: fileName.value);
+        await runCommandLine(url: urlValue.value, fileName: fileNameObs.value);
     log('$runtimeType, runCommandResult: $runCommandResult ');
     return runCommandResult;
   }
 
-  Future<bool> runCommandLine(
-      {required String url, required String fileName}) async {
-    isExecuting.value = true;
-    player.open(Media(url));
-
-    Completer<bool> complete = Completer();
-
-    final timeStamp = int.parse(selectionTime.value) * 60;
-
+  Future<String> _createDirectory() async {
     final directory = await getApplicationDocumentsDirectory();
 
     final path = "${directory.path}\\Videos";
@@ -115,8 +119,20 @@ class MyHomeController extends GetxController {
 
       log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
     }
-    final saveFileName =
-        fileName.isNotEmpty ? fileName : 'video-%Y-%m-%d_%H-%M-%S';
+    return path;
+  }
+
+  Future<bool> runCommandLine(
+      {required String url, required String fileName}) async {
+    isExecuting.value = true;
+
+    Completer<bool> complete = Completer();
+
+    final timeStamp = int.parse(selectionTime.value) * recordMinutes;
+
+    final path = await _createDirectory();
+
+    final saveFileName = fileName.isNotEmpty ? fileName : _formattedDate();
 
     final command =
         'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$saveFileName.mp4';
@@ -129,9 +145,9 @@ class MyHomeController extends GetxController {
       if (result.exitCode == 0) {
         complete.complete(true);
         isExecuting.value = false;
+        fileNameController.text = fileNameObs.value = '';
 
         videoPath.value = "$path\\$saveFileName.mp4";
-        log('$runtimeType,  ${DateTime.now()} runCommandLine result: ${result.pid}  ');
 
         log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPath.value}  ');
       } else {
@@ -142,6 +158,11 @@ class MyHomeController extends GetxController {
     return complete.future;
   }
 
+  String _formattedDate() {
+    final now = DateTime.now();
+    return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}-${now.second.toString().padLeft(2, '0')}";
+  }
+
   void onUrlChange({required String value}) {
     log('$runtimeType, On url change value: $value');
     urlValue.value = value;
@@ -150,7 +171,7 @@ class MyHomeController extends GetxController {
   void onFileNameChange({required String value}) {
     value = value.replaceAll(' ', '_');
     log('$runtimeType, On url change value: $value');
-    fileName.value = value;
+    fileNameObs.value = value;
   }
 
   void onClickExpand({required MultiChoiceItem aiFeature}) {
