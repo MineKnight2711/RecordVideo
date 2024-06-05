@@ -34,16 +34,16 @@ class PlayButton extends GetView<MyHomeController> {
                               log('$runtimeType,${DateTime.now()} recordResult : $recordResult');
                             }
                           }
-                        : null)
+                        : () {
+                            controller.stopRecord();
+                          })
                     : null,
                 child: Container(
                   height: 40,
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   decoration: BoxDecoration(
                     color: controller.urlValueObs.isNotEmpty
-                        ? (controller.isExecuting.value
-                            ? Colors.grey
-                            : Colors.amber)
+                        ? Colors.amber
                         : Colors.grey,
                     borderRadius: BorderRadius.circular(8),
                   ),

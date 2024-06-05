@@ -1,19 +1,11 @@
-import 'dart:developer';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:record_video/widgets/dropdown.dart';
-import '../models/multi_choice_item.dart';
-import 'ai_feature_item.dart';
 import '../controller/my_home_controller.dart';
 import 'ai_feature_list.dart';
 import 'buttons.dart';
-
-// link rtsp
-// duration
-// folder
 
 class MyHomePage extends GetView<MyHomeController> {
   const MyHomePage({super.key});
@@ -72,16 +64,21 @@ class MyHomePage extends GetView<MyHomeController> {
                         const SizedBox(
                           width: 8,
                         ),
-                        Expanded(child:Obx((){
-                          return  DropDown(
-                              title:  'Chọn thời gian',
-                              items:List.generate(5, (index) => (index+1).toString()),
-                              selectedValue:controller.selectionTimeObs.value,
-                              onChanged:(value){
-                                controller.onTimeChange(value: value);
-                              }
-                          );
-                        },),),
+                        Expanded(
+                          child: Obx(
+                            () {
+                              return DropDown(
+                                  title: 'Chọn thời gian',
+                                  items: List.generate(
+                                      5, (index) => (index + 1).toString()),
+                                  selectedValue:
+                                      controller.selectionTimeObs.value,
+                                  onChanged: (value) {
+                                    controller.onTimeChange(value: value);
+                                  });
+                            },
+                          ),
+                        ),
                         const Text(
                           'phút',
                           style: TextStyle(
@@ -132,9 +129,8 @@ class MyHomePage extends GetView<MyHomeController> {
             //setting feature list
             Expanded(
                 child: AiFeatureList(
-                  controller:controller,
-                )
-            ),
+              controller: controller,
+            )),
           ],
         ),
       ),

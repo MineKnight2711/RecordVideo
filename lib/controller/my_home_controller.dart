@@ -18,7 +18,7 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 60;
+const int recordMinutes = 10;
 
 class MyHomeController extends GetxController {
   late final Player player;
@@ -34,6 +34,7 @@ class MyHomeController extends GetxController {
   var urlValueObs = ''.obs;
   var fileNameObs = ''.obs;
   var videoPathObs = ''.obs;
+  var folderPathObs = ''.obs;
 
   var aiFeatureList = <MultiChoiceItem>[].obs;
 
@@ -94,8 +95,8 @@ class MyHomeController extends GetxController {
   Future<bool> startRecord() async {
     log('$runtimeType, start record url: ${urlValueObs.value}, fileName  ');
     player.open(Media(urlValueObs.value));
-    final runCommandResult =
-        await runCommandLine(url: urlValueObs.value, fileName: fileNameObs.value);
+    final runCommandResult = await runCommandLine(
+        url: urlValueObs.value, fileName: fileNameObs.value);
     log('$runtimeType, runCommandResult: $runCommandResult ');
     return runCommandResult;
   }
@@ -113,6 +114,12 @@ class MyHomeController extends GetxController {
       log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
     }
     return path;
+  }
+
+  void stopRecord() {
+    log('$runtimeType,  ${DateTime.now()} stop record');
+    player.stop();
+    isExecuting.value = false;
   }
 
   Future<bool> runCommandLine(
@@ -138,16 +145,17 @@ class MyHomeController extends GetxController {
       if (result.exitCode == 0) {
         complete.complete(true);
         isExecuting.value = false;
-        fileNameController.text = fileNameObs.value = '';
+        fileNameController.text = '';
 
         videoPathObs.value = "$path\\$saveFileName.mp4";
-
+        folderPathObs.value = path;
         log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPathObs.value}  ');
       } else {
         complete.complete(false);
         log('$runtimeType,  ${DateTime.now()} runCommandLine error: ${result.exitCode}  ');
       }
     });
+    // log('$runtimeType,  ${DateTime.now()} runCommandLine result: ${processResult.exitCode}  ');
     return complete.future;
   }
 
@@ -178,19 +186,17 @@ class MyHomeController extends GetxController {
     aiFeatureList.value = result;
   }
 
-  void exportData() {
+  void exportData() async {
     List<DetectionInfo> detections = [];
     for (var aiFeature in aiFeatureList) {
       if (aiFeature.isSelected == true && aiFeature.data.isNotEmpty == true) {
-        detections.add(DetectionInfo(type: aiFeature.id,
-            events: aiFeature.getEvents()
-        ),);
+        detections.add(
+          DetectionInfo(type: aiFeature.id, events: aiFeature.getEvents()),
+        );
       }
     }
     VideoInfo videoInfo = VideoInfo(
-      createdTime: DateTime
-          .now()
-          .millisecondsSinceEpoch,
+      createdTime: DateTime.now().millisecondsSinceEpoch,
       detections: detections,
       duration: int.parse(selectionTimeObs.value) * recordMinutes,
       videoName: fileNameObs.value,
@@ -209,16 +215,23 @@ class MyHomeController extends GetxController {
 }
      */
     log('$runtimeType, Export data: ${videoInfo.toString()}');
+    final file = File("${folderPathObs.value}/${fileNameObs.value}.txt");
+    file.writeAsString(videoInfo.toString());
   }
 
-  void addData({required MultiChoiceItem aiFeature, required String data, required String countEvent}) {
+  void addData(
+      {required MultiChoiceItem aiFeature,
+      required String data,
+      required String countEvent}) {
     final result = <MultiChoiceItem>[];
     for (var element in aiFeatureList) {
       if (element.id == aiFeature.id) {
-        for(int i = 0;i<int.parse(countEvent);i++){
+        for (int i = 0; i < int.parse(countEvent); i++) {
           element.data.add(DataItem(id: const Uuid().v1(), value: data));
         }
+        element.isSelected = data.isNotEmpty;
       }
+
       result.add(element);
     }
     aiFeatureList.value = result;
@@ -231,6 +244,7 @@ class MyHomeController extends GetxController {
     for (var element in aiFeatureList) {
       if (element.id == aiFeature.id) {
         element.data.remove(data);
+        element.isSelected = element.data.isNotEmpty;
       }
       result.add(element);
     }
@@ -239,14 +253,14 @@ class MyHomeController extends GetxController {
   }
 
   void onCheckChange({required MultiChoiceItem aiFeature}) {
-    final result = <MultiChoiceItem>[];
-    for (var element in aiFeatureList) {
-      if (element.id == aiFeature.id) {
-        element.isSelected = !(element.isSelected ?? false);
-      }
-      result.add(element);
-    }
-    aiFeatureList.value = result;
+    // final result = <MultiChoiceItem>[];
+    // for (var element in aiFeatureList) {
+    //   if (element.id == aiFeature.id) {
+    //     element.isSelected = !(element.isSelected ?? false);
+    //   }
+    //   result.add(element);
+    // }
+    // aiFeatureList.value = result;
   }
 
   // init data
