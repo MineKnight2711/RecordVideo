@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/RecordVideo.iml" filepath="$PROJECT_DIR$/.idea/RecordVideo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/wakelock_plus/android/android.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/wakelock_plus/android/android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/package_info_plus/android/android1.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/package_info_plus/android/android1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/media_kit_video/android/android2.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/media_kit_video/android/android2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/wakelock_plus/example/example.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/wakelock_plus/example/example.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/package_info_plus/example/example1.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/package_info_plus/example/example1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/media_kit_video/example/example2.iml" filepath="$PROJECT_DIR$/windows/flutter/ephemeral/.plugin_symlinks/media_kit_video/example/example2.iml" />
+    </modules>
+  </component>
+</project>

@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record_video/extension/multiple_choice_extension.dart';
 import 'package:uuid/uuid.dart';
@@ -25,16 +27,46 @@ final timeItems = [
 ];
 
 class MyHomeController extends GetxController {
+  late final Player player;
+
+  late final VideoController playerController;
+
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
 
   //obs
+  final RxBool isExecuting = false.obs;
   var selectionTime = '1'.obs;
   var urlValue = ''.obs;
   var fileName = ''.obs;
+  var videoPath = ''.obs;
   var aiFeatureList = <MultiChoiceItem>[].obs;
+  @override
+  void onInit() {
+    super.onInit();
+    _initData();
+    _initControllerAndPlayer();
+  }
 
-  void initData() {
+  void _initControllerAndPlayer() {
+    player = Player(
+        configuration: const PlayerConfiguration(
+      // bufferSize: 5,
+      protocolWhitelist: ['tcp'],
+      logLevel: MPVLogLevel.debug,
+    ));
+    playerController = VideoController(
+      player,
+      configuration: const VideoControllerConfiguration(
+        enableHardwareAcceleration: true,
+      ),
+    );
+    player.stream.log.listen((data) {
+      log('$runtimeType, data: ${data.text}');
+    });
+  }
+
+  void _initData() {
     urlValue.value =
         "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
     aiFeatureList.value = _generateMultiChoiceItemList();
@@ -50,20 +82,28 @@ class MyHomeController extends GetxController {
     log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTime.value}');
   }
 
-  void startRecord() async {
+  void replay({required String videoPath}) async {
+    await player.open(Media("file:///$videoPath")).whenComplete(
+        () => log('$runtimeType,  ${DateTime.now()} replay video'));
+  }
+
+  Future<bool> startRecord() async {
     log('$runtimeType, start record url: ${urlValue.value}, fileName  ');
-    if (urlValue.value.isEmpty) {
-      return;
-    }
     final runCommandResult =
         await runCommandLine(url: urlValue.value, fileName: fileName.value);
     log('$runtimeType, runCommandResult: $runCommandResult ');
+    return runCommandResult;
   }
 
   Future<bool> runCommandLine(
       {required String url, required String fileName}) async {
+    isExecuting.value = true;
+    player.open(Media(url));
+
     Completer<bool> complete = Completer();
+
     final timeStamp = int.parse(selectionTime.value) * 60;
+
     final directory = await getApplicationDocumentsDirectory();
 
     final path = "${directory.path}\\Videos";
@@ -72,24 +112,33 @@ class MyHomeController extends GetxController {
 
     if (!ifDirectoryExist) {
       var directory = await Directory(path).create(recursive: true);
+
       log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
     }
+    final saveFileName =
+        fileName.isNotEmpty ? fileName : 'video-%Y-%m-%d_%H-%M-%S';
 
     final command =
-        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\${fileName.isNotEmpty ? fileName : 'video-%Y-%m-%d_%H-%M-%S'}.mp4';
+        'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$saveFileName.mp4';
     log('$runtimeType,  ${DateTime.now()} runCommandLine : $command ');
 
-    ProcessResult result = Process.runSync(
+    await Process.run(
       command,
       [],
-    );
+    ).then((result) {
+      if (result.exitCode == 0) {
+        complete.complete(true);
+        isExecuting.value = false;
 
-    if (result.exitCode == 0) {
-      complete.complete(true);
-    } else {
-      complete.complete(false);
-    }
-    log('$runtimeType,  ${DateTime.now()} runCommandLine result: ${result.pid}  ');
+        videoPath.value = "$path\\$saveFileName.mp4";
+        log('$runtimeType,  ${DateTime.now()} runCommandLine result: ${result.pid}  ');
+
+        log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPath.value}  ');
+      } else {
+        complete.complete(false);
+        log('$runtimeType,  ${DateTime.now()} runCommandLine error: ${result.exitCode}  ');
+      }
+    });
     return complete.future;
   }
 
@@ -99,6 +148,7 @@ class MyHomeController extends GetxController {
   }
 
   void onFileNameChange({required String value}) {
+    value = value.replaceAll(' ', '_');
     log('$runtimeType, On url change value: $value');
     fileName.value = value;
   }

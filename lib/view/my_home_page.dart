@@ -1,57 +1,19 @@
 import 'dart:developer';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-
-// import 'package:media_kit_video/media_kit_video.dart';
-
 import '../models/multi_choice_item.dart';
 import 'ai_feature_item.dart';
-import 'my_home_controller.dart';
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+import '../controller/my_home_controller.dart';
 
 // link rtsp
 // duration
 // folder
 
-class _MyHomePageState extends State<MyHomePage> {
-  MyHomeController get myHomeController =>
-      Get.put(MyHomeController(), permanent: false);
-  late final Player player = Player(
-      configuration: const PlayerConfiguration(
-    // bufferSize: 5,
-    protocolWhitelist: ['tcp'],
-    logLevel: MPVLogLevel.debug,
-  ));
-
-  late final VideoController playerController = VideoController(
-    player,
-    configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: true,
-    ),
-  );
-
-  @override
-  void initState() {
-    //  player.open(Media('rtsp://admin:Insen181@10.10.1.105:554/Streaming/channels/102'));
-    _registerListener();
-    myHomeController.initData();
-
-    super.initState();
-  }
-
-  void _registerListener() {
-    player.stream.log.listen((data) {
-      log('$runtimeType, data: ${data.text}');
-    });
-  }
+class MyHomePage extends GetView<MyHomeController> {
+  const MyHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -77,11 +39,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   SizedBox(
                     width: width * 0.7 * 0.7,
                     child: TextField(
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp("[0-9a-zA-Z ]")),
+                      ],
                       decoration:
                           const InputDecoration(hintText: 'Tên file...'),
-                      controller: myHomeController.fileNameController,
+                      controller: controller.fileNameController,
                       onChanged: (value) {
-                        myHomeController.onFileNameChange(value: value);
+                        controller.onFileNameChange(value: value);
                       },
                     ),
                   ),
@@ -94,9 +60,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           child: TextField(
                             decoration:
                                 const InputDecoration(hintText: 'Rtsp url'),
-                            controller: myHomeController.urlController,
+                            controller: controller.urlController,
                             onChanged: (value) {
-                              myHomeController.onUrlChange(value: value);
+                              controller.onUrlChange(value: value);
                             },
                           ),
                         ),
@@ -154,10 +120,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       )
                                       .toList(),
-                                  value: myHomeController.selectionTime.value,
+                                  value: controller.selectionTime.value,
                                   onChanged: (value) {
-                                    myHomeController.onTimeChange(
-                                        value: value ?? '');
+                                    controller.onTimeChange(value: value ?? '');
                                   },
                                 ),
                               );
@@ -181,42 +146,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
 
                   //button
-                  SizedBox(
-                    height: 48,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Obx(() => InkWell(
-                              onTap: myHomeController.urlValue.isNotEmpty
-                                  ? () {
-                                      player.open(Media(
-                                          myHomeController.urlValue.value));
-                                      myHomeController.startRecord();
-                                    }
-                                  : null,
-                              child: Container(
-                                height: 40,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 24),
-                                decoration: BoxDecoration(
-                                  color: myHomeController.urlValue.isNotEmpty
-                                      ? Colors.amber
-                                      : Colors.grey,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                alignment: Alignment.center,
-                                child: const Text(
-                                  'Bắt đầu',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            )),
-                      ],
-                    ),
-                  ),
+                  PlayButton(),
                   const SizedBox(
                     height: 16,
                   ),
@@ -230,7 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       width: (width / 2) * 16 / 9,
                       wakelock: true,
                       aspectRatio: 16 / 9,
-                      controller: playerController,
+                      controller: controller.playerController,
                       controls: (state) {
                         return const SizedBox();
                       },
@@ -258,28 +188,26 @@ class _MyHomePageState extends State<MyHomePage> {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               itemBuilder: (context, index) {
                                 final aiFeature =
-                                    myHomeController.aiFeatureList[index];
+                                    controller.aiFeatureList[index];
                                 return AiFeatureItem(
                                   aiFeature: aiFeature,
                                   onCheckChange: (item) {
-                                    myHomeController.onCheckChange(
-                                        aiFeature: item);
+                                    controller.onCheckChange(aiFeature: item);
                                   },
                                   onClickExpand: (item) {
-                                    myHomeController.onClickExpand(
-                                        aiFeature: item);
+                                    controller.onClickExpand(aiFeature: item);
                                   },
                                   onClickAddData: (item) {
                                     _showDialog(
                                         aiFeature: item,
                                         onPressAddData: (aiFeature, value) {
-                                          myHomeController.addData(
+                                          controller.addData(
                                               aiFeature: aiFeature,
                                               data: value);
                                         });
                                   },
                                   onPressedDeleteData: (aiFeature, dataItem) {
-                                    myHomeController.removeData(
+                                    controller.removeData(
                                         aiFeature: aiFeature, data: dataItem);
                                   },
                                 );
@@ -289,7 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                   height: 8,
                                 );
                               },
-                              itemCount: myHomeController.aiFeatureList.length);
+                              itemCount: controller.aiFeatureList.length);
                         }),
                       ),
                       Container(
@@ -297,14 +225,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         height: 40,
                         child: Obx(
                           () => TextButton(
-                            onPressed: myHomeController.urlValue.isNotEmpty &&
-                                    !myHomeController.checkFeatureList()
+                            onPressed: controller.urlValue.isNotEmpty &&
+                                    !controller.checkFeatureList()
                                 ? () {}
                                 : null,
                             child: Container(
                               decoration: BoxDecoration(
-                                  color: myHomeController.urlValue.isNotEmpty &&
-                                          !myHomeController.checkFeatureList()
+                                  color: controller.urlValue.isNotEmpty &&
+                                          !controller.checkFeatureList()
                                       ? Colors.amber
                                       : Colors.grey,
                                   borderRadius: BorderRadius.circular(8)),
@@ -334,55 +262,146 @@ class _MyHomePageState extends State<MyHomePage> {
     required MultiChoiceItem aiFeature,
     required Function(MultiChoiceItem, String) onPressAddData,
   }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        TextEditingController textController = TextEditingController();
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text("Thêm dữ liệu"),
-              actions: [
-                Container(
-                  color: Colors.transparent,
-                  child: TextField(
-                    decoration: const InputDecoration(hintText: 'Thêm dữ liệu'),
-                    controller: textController,
-                  ),
+    TextEditingController textController = TextEditingController();
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Thêm dữ liệu"),
+        actions: [
+          Container(
+            color: Colors.transparent,
+            child: TextField(
+              decoration: const InputDecoration(hintText: 'Thêm dữ liệu'),
+              controller: textController,
+            ),
+          ),
+          const SizedBox(
+            height: 24,
+          ),
+          SizedBox(
+            height: 40,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Get.back();
+                  },
+                  child: const Text("Huỷ"),
                 ),
-                const SizedBox(
-                  height: 24,
+                TextButton(
+                  onPressed: () {
+                    Get.back();
+                    log('$runtimeType, data: ${textController.text}');
+                    if (textController.text.isNotEmpty == true) {
+                      onPressAddData.call(aiFeature, textController.text);
+                    }
+                  },
+                  child: const Text("Thêm"),
                 ),
-                SizedBox(
-                  height: 40,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text("Huỷ"),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          log('$runtimeType, data: ${textController.text}');
-                          if (textController.text.isNotEmpty == true) {
-                            onPressAddData.call(aiFeature, textController.text);
-                          }
-                        },
-                        child: const Text("Thêm"),
-                      ),
-                    ],
-                  ),
-                )
               ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class PlayButton extends GetView<MyHomeController> {
+  const PlayButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Obx(() {
+            if (controller.videoPath.isEmpty) {
+              return InkWell(
+                onTap: controller.urlValue.isNotEmpty
+                    ? (!controller.isExecuting.value
+                        ? () async {
+                            final recordResult = await controller.startRecord();
+                            if (recordResult) {
+                              controller.player.stop();
+                            } else {
+                              log('$runtimeType,${DateTime.now()} recordResult : $recordResult');
+                            }
+                          }
+                        : null)
+                    : null,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: controller.urlValue.isNotEmpty
+                        ? (controller.isExecuting.value
+                            ? Colors.grey
+                            : Colors.amber)
+                        : Colors.grey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Obx(
+                    () => Row(
+                      mainAxisAlignment: controller.isExecuting.value
+                          ? MainAxisAlignment.spaceBetween
+                          : MainAxisAlignment.center,
+                      children: [
+                        controller.isExecuting.value
+                            ? Container(
+                                height: 16,
+                                width: 16,
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 5),
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black),
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                        const Text(
+                          'Bắt đầu',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            return InkWell(
+              onTap: () {
+                controller.replay(videoPath: controller.videoPath.value);
+              },
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                decoration: BoxDecoration(
+                  color: Colors.amber,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                alignment: Alignment.center,
+                child: const Text(
+                  'Phát lại',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
             );
-          },
-        );
-      },
+          }),
+        ],
+      ),
     );
   }
 }
