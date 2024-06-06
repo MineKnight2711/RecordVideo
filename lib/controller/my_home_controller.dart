@@ -18,8 +18,8 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 5;
-
+const int recordMinutes = 100;
+const defaultFps = 15;
 class MyHomeController extends GetxController {
   late final Player player;
 
@@ -60,8 +60,20 @@ class MyHomeController extends GetxController {
     );
 
     player.stream.log.listen((data) {
-      log('$runtimeType, data: ${data.text}');
+      final text = data.text;
+      if(text.contains('Container reported FPS')){
+      final fps = double.parse(text.substring('Container reported FPS: '.length));
+        // if fps = 15 start command record video
+        if(fps == defaultFps){
+          // start command record video 
+        }else{
+          //stop stream, show error
+
+        }
+      }
+    
     });
+    
   }
 
   void _initData() {
@@ -101,10 +113,11 @@ class MyHomeController extends GetxController {
   Future<bool> startRecord() async {
     log('$runtimeType, start record url: ${urlValueObs.value}, fileName  ');
     player.open(Media(urlValueObs.value));
-    final runCommandResult = await runCommandLine(
-        url: urlValueObs.value, fileName: fileNameObs.value);
-    log('$runtimeType, runCommandResult: $runCommandResult ');
-    return runCommandResult;
+    // final runCommandResult = await runCommandLine(
+    //     url: urlValueObs.value, fileName: fileNameObs.value);
+    // log('$runtimeType, runCommandResult: $runCommandResult ');
+    // return runCommandResult;
+    return false;
   }
 
   Future<String> _createDirectory() async {
@@ -122,10 +135,23 @@ class MyHomeController extends GetxController {
     return path;
   }
 
-  void stopRecord() {
+  void stopRecord()async {
     log('$runtimeType,  ${DateTime.now()} stop record');
+   // stop strea,
     player.stop();
     isExecuting.value = false;
+    // delete file
+    await Process.run(
+      'rm pathfile',
+      [],
+    );
+    // stop command
+     await Process.run(
+      'taskkill /IM "ffmpeg.exe" /F',
+      [],
+    );
+    // reinit data
+    _initData();
   }
 
   Future<bool> runCommandLine(
