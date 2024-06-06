@@ -95,7 +95,7 @@ BEGIN
             VALUE "InternalName", "record_video" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.example. All rights reserved." "\0"
             VALUE "OriginalFilename", "record_video.exe" "\0"
-            VALUE "ProductName", "record_video" "\0"
+            VALUE "ProductName", "Camera_Recorder" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
