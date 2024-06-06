@@ -30,6 +30,7 @@ class MyHomeController extends GetxController {
 
   //obs
   final RxBool isExecuting = false.obs;
+  final RxBool isReplay = false.obs;
   var selectionTimeObs = '1'.obs;
   var urlValueObs = ''.obs;
   var fileNameObs = ''.obs;
@@ -82,12 +83,14 @@ class MyHomeController extends GetxController {
     log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTimeObs.value}');
   }
 
-  void replay() async {
-    await player
+  void replay() {
+    isReplay.value = true;
+    player
         .open(Media("file:///${videoPathObs.value}"), play: false)
         .whenComplete(
           () => player.stream.completed.listen((event) {
             log('$runtimeType,  ${DateTime.now()} replay completed: $event');
+            isReplay.value = false;
           }),
         )
         .catchError((e) {

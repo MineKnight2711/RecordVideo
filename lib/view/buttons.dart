@@ -1,5 +1,7 @@
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -81,14 +83,16 @@ class PlayButton extends GetView<MyHomeController> {
               );
             }
             return InkWell(
-              onTap: () {
-                controller.player.play();
-              },
+              onTap: controller.isReplay.value
+                  ? null
+                  : () {
+                      controller.player.play();
+                    },
               child: Container(
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
-                  color: Colors.amber,
+                  color: controller.isReplay.value ? Colors.grey : Colors.amber,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,

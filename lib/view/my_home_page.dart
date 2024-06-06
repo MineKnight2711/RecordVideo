@@ -107,7 +107,6 @@ class MyHomePage extends GetView<MyHomeController> {
                     Container(
                       width: width * 0.6,
                       height: width * 0.6 * 9 / 16,
-                      // color: Colors.grey.withOpacity(0.5),
                       alignment: Alignment.topLeft,
                       child: Video(
                         width: (width / 2) * 16 / 9,

@@ -20,6 +20,7 @@ dependencies:
   ionicons: ^0.2.2
   uuid: 4.4.0
   equatable: 2.0.5
+  file_picker: 8.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
