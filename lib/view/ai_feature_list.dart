@@ -1,18 +1,16 @@
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:record_video/controller/my_home_controller.dart';
 import 'package:record_video/models/models.dart';
 import 'package:record_video/widgets/dropdown.dart';
 
+import '../widgets/custom_dialog.dart';
 import 'ai_feature_item.dart';
 
 class AiFeatureList extends StatelessWidget {
   final MyHomeController controller;
-  const AiFeatureList({super.key,
-    required this.controller
-  });
+  const AiFeatureList({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +25,7 @@ class AiFeatureList extends StatelessWidget {
               return ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   itemBuilder: (context, index) {
-                    final aiFeature =
-                    controller.aiFeatureList[index];
+                    final aiFeature = controller.aiFeatureList[index];
                     return AiFeatureItem(
                       aiFeature: aiFeature,
                       onCheckChange: (item) {
@@ -39,13 +36,13 @@ class AiFeatureList extends StatelessWidget {
                       },
                       onClickAddData: (item) {
                         _showDialog(
-                          context: context,
+                            context: context,
                             aiFeature: item,
-                            onPressAddData: (aiFeature, value,countEvent) {
+                            onPressAddData: (aiFeature, value, countEvent) {
                               controller.addData(
-                                  aiFeature: aiFeature,
-                                  data: value,
-                                  countEvent: countEvent,
+                                aiFeature: aiFeature,
+                                data: value,
+                                countEvent: countEvent,
                               );
                             });
                       },
@@ -67,37 +64,57 @@ class AiFeatureList extends StatelessWidget {
             margin: const EdgeInsets.symmetric(vertical: 24),
             height: 40,
             child: Obx(
-                    () {
-                  final canExportData =
-                      controller.urlValueObs.isNotEmpty &&
-                          !controller.checkFeatureList() &&
-                          controller.videoPathObs.value.isNotEmpty;
-                  return  TextButton(
-                    onPressed: canExportData
-                        ? () {
-                      controller.exportData();
-                    }
-                        : null,
-                    child: Container(
-                      decoration: BoxDecoration(
-                          color: canExportData
-                              ? Colors.amber
-                              : Colors.grey,
-                          borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 100, vertical: 8),
-                      child: const Text(
-                        'Xuất dữ liệu',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                        ),
+              () {
+                final canExportData = controller.urlValueObs.isNotEmpty &&
+                    !controller.checkFeatureList() &&
+                    controller.videoPathObs.value.isNotEmpty;
+                return TextButton(
+                  onPressed: canExportData
+                      ? () async {
+                          final exportResult = await controller.exportData();
+                          if (exportResult) {
+                            Get.dialog(CustomDialog(
+                              icon: const Icon(Icons.check_circle_outline,
+                                  color: Colors.green, size: 50),
+                              title: "Xuất dữ liệu thành công!",
+                              message: "Dữ liệu đã được xuất ra file!",
+                              onOkPressed: () {
+                                Get.back();
+                                //Mở file
+                              },
+                            )).whenComplete(() {
+                              controller.refresh();
+                            });
+                          } else {
+                            Get.dialog(CustomDialog(
+                              icon: const Icon(Icons.check_circle_outline,
+                                  color: Colors.green, size: 50),
+                              title: "Lỗi!",
+                              message: "Đã có lỗi xảy ra khi lưu file!",
+                              onOkPressed: () {
+                                Get.back();
+                                //Mở file
+                              },
+                            ));
+                          }
+                        }
+                      : null,
+                  child: Container(
+                    decoration: BoxDecoration(
+                        color: canExportData ? Colors.amber : Colors.grey,
+                        borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 100, vertical: 8),
+                    child: const Text(
+                      'Xuất dữ liệu',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16,
                       ),
                     ),
-                  );
-                }
-
-
+                  ),
+                );
+              },
             ),
           )
         ],
@@ -122,23 +139,24 @@ class AiFeatureList extends StatelessWidget {
             color: Colors.transparent,
             child: Row(
               children: [
-               SizedBox(
-                 width: 300,
-                 child:  TextField(
-                   decoration: const InputDecoration(hintText: 'Dữ liệu'),
-                   controller: textController,
-                 ),
-               ),
-                Expanded(child: DropDown(
-                  title: 'Số lần',
-                    items:List.generate(20, (index) => (index+1).toString()),
-                    selectedValue:countEvent,
-                    onChanged:(value){
+                SizedBox(
+                  width: 300,
+                  child: TextField(
+                    decoration: const InputDecoration(hintText: 'Dữ liệu'),
+                    controller: textController,
+                  ),
+                ),
+                Expanded(
+                  child: DropDown(
+                    title: 'Số lần',
+                    items: List.generate(20, (index) => (index + 1).toString()),
+                    selectedValue: countEvent,
+                    onChanged: (value) {
                       // controller.onTimeChange(value: value);
                       countEvent = value;
                       log('$runtimeType, onChanged count: $countEvent');
-                    }
-                ),
+                    },
+                  ),
                 ),
                 const Text(
                   'lần',
@@ -170,7 +188,8 @@ class AiFeatureList extends StatelessWidget {
                     Get.back();
                     log('$runtimeType, data: ${textController.text}');
                     if (textController.text.isNotEmpty == true) {
-                      onPressAddData.call(aiFeature, textController.text,countEvent);
+                      onPressAddData.call(
+                          aiFeature, textController.text, countEvent);
                     }
                   },
                   child: const Text("Thêm"),

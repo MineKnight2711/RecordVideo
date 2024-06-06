@@ -22,6 +22,7 @@ class App extends StatelessWidget {
           name: "/",
           page: () => const MyHomePage(),
           binding: MyHomePageBinding(),
+          transition: Transition.noTransition,
         )
       ],
     );

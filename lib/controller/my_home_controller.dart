@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
-
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+// ignore: unused_import
 import 'package:path_provider/path_provider.dart';
 import 'package:record_video/extension/multiple_choice_extension.dart';
 import 'package:uuid/uuid.dart';
@@ -18,8 +19,13 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 100;
+const int recordMinutes = 5;
 const defaultFps = 15;
+const url =
+    "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
+
+enum RecordState { waiting, recording, recordFinished, replaying }
+
 class MyHomeController extends GetxController {
   late final Player player;
 
@@ -27,23 +33,31 @@ class MyHomeController extends GetxController {
 
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
+  TextEditingController folderPathController = TextEditingController();
 
   //obs
-  final RxBool isExecuting = false.obs;
-  final RxBool isReplay = false.obs;
-  var selectionTimeObs = '1'.obs;
-  var urlValueObs = ''.obs;
-  var fileNameObs = ''.obs;
-  var videoPathObs = ''.obs;
-  var folderPathObs = ''.obs;
+  final recordState = RecordState.waiting.obs;
 
-  var aiFeatureList = <MultiChoiceItem>[].obs;
+  final RxString selectionTimeObs = '1'.obs;
+  final RxString urlValueObs = ''.obs;
+  final RxString fileNameObs = ''.obs;
+  final RxString videoPathObs = ''.obs;
+  final RxString folderPathObs = ''.obs;
+
+  final aiFeatureList = <MultiChoiceItem>[].obs;
 
   @override
   void onInit() {
     super.onInit();
     _initData();
     _initControllerAndPlayer();
+  }
+
+  @override
+  void refresh() {
+    super.refresh();
+    player.stop();
+    _refreshData();
   }
 
   void _initControllerAndPlayer() {
@@ -61,26 +75,35 @@ class MyHomeController extends GetxController {
 
     player.stream.log.listen((data) {
       final text = data.text;
-      if(text.contains('Container reported FPS')){
-      final fps = double.parse(text.substring('Container reported FPS: '.length));
-        // if fps = 15 start command record video
-        if(fps == defaultFps){
-          // start command record video 
-        }else{
-          //stop stream, show error
+      if (text.contains('Container reported FPS')) {
+        final fps =
+            double.parse(text.substring('Container reported FPS: '.length));
 
+        log('$runtimeType,  ${DateTime.now()} Container reported FPS: $fps');
+        // if fps = 15 start command record video
+        if (fps == defaultFps) {
+          //Start command record video
+          runCommandLine(fileName: fileNameObs.value, url: urlValueObs.value);
+        } else {
+          // stopRecord();
         }
       }
-    
     });
-    
+  }
+
+  void _refreshData() {
+    recordState.value = RecordState.waiting;
+    selectionTimeObs.value = '1';
+    videoPathObs.value = folderPathObs.value = folderPathController.text = '';
+    fileNameObs.value = fileNameController.text = _formattedDate();
+    urlValueObs.value = url;
+    aiFeatureList.clear();
+    aiFeatureList.value = _generateMultiChoiceItemList();
   }
 
   void _initData() {
     fileNameController.text = fileNameObs.value = _formattedDate();
-
-    urlController.text = urlValueObs.value =
-        "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
+    urlValueObs.value = urlController.text = url;
 
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
@@ -96,13 +119,18 @@ class MyHomeController extends GetxController {
   }
 
   void replay() {
-    isReplay.value = true;
+    recordState.value = RecordState.replaying;
+
     player
-        .open(Media("file:///${videoPathObs.value}"), play: false)
+        .play()
         .whenComplete(
           () => player.stream.completed.listen((event) {
-            log('$runtimeType,  ${DateTime.now()} replay completed: $event');
-            isReplay.value = false;
+            if (event) {
+              recordState.value = RecordState.recordFinished;
+            } else {
+              recordState.value = RecordState.replaying;
+            }
+            log('$runtimeType,  ${DateTime.now()} replay completed: ${recordState.value}');
           }),
         )
         .catchError((e) {
@@ -110,59 +138,86 @@ class MyHomeController extends GetxController {
     });
   }
 
-  Future<bool> startRecord() async {
+  Future<String> startRecord() async {
+    if (folderPathObs.value.isEmpty) {
+      return "NoPath";
+    }
+    recordState.value = RecordState.recording;
     log('$runtimeType, start record url: ${urlValueObs.value}, fileName  ');
     player.open(Media(urlValueObs.value));
+
     // final runCommandResult = await runCommandLine(
     //     url: urlValueObs.value, fileName: fileNameObs.value);
     // log('$runtimeType, runCommandResult: $runCommandResult ');
     // return runCommandResult;
-    return false;
+    return "";
   }
 
-  Future<String> _createDirectory() async {
-    final directory = await getApplicationDocumentsDirectory();
+  void selectDirectory() async {
+    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
 
-    final path = "${directory.path}\\Videos";
-
-    final ifDirectoryExist = await File(path).exists();
-
-    if (!ifDirectoryExist) {
-      var directory = await Directory(path).create(recursive: true);
-
-      log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
+    if (selectedDirectory != null) {
+      log('$runtimeType,${DateTime.now()} file path : $selectedDirectory');
+      folderPathController.text = folderPathObs.value = selectedDirectory;
     }
-    return path;
   }
 
-  void stopRecord()async {
+  // Future<String> _setDefaultDirectory() async {
+  //   final directory = await getApplicationDocumentsDirectory();
+
+  //   final path = "${directory.path}\\Videos";
+
+  //   final ifDirectoryExist = await File(path).exists();
+
+  //   if (!ifDirectoryExist) {
+  //     var directory = await Directory(path).create(recursive: true);
+
+  //     log('$runtimeType,  ${DateTime.now()} file path : ${directory.path} ');
+  //   }
+  //   return path;
+  // }
+
+  void stopRecord() async {
     log('$runtimeType,  ${DateTime.now()} stop record');
-   // stop strea,
+    // stop strea,
     player.stop();
-    isExecuting.value = false;
+    recordState.value = RecordState.waiting;
+    final path = "${folderPathObs.value}\\${fileNameObs.value}.mp4";
+    final cmd = 'del $path';
+
     // delete file
-    await Process.run(
-      'rm pathfile',
-      [],
-    );
-    // stop command
-     await Process.run(
-      'taskkill /IM "ffmpeg.exe" /F',
-      [],
-    );
+    log('$runtimeType,  ${DateTime.now()} stop record cmd:$cmd');
+
+    try {
+      // stop command
+      await Process.run(
+        'taskkill /IM "ffmpeg.exe" /F',
+        [],
+      ).then((result) {
+        log('$runtimeType,  ${DateTime.now()} stop record exit code:${result.exitCode}');
+        Process.run(
+          runInShell: true,
+          cmd,
+          [],
+        ).then((result1) => log(
+            '$runtimeType,  ${DateTime.now()} stop record delete file exit code:${result1.exitCode}'));
+      });
+    } catch (e) {
+      log('$runtimeType,  ${DateTime.now()} stop record error:${e.toString()}');
+    }
     // reinit data
     _initData();
   }
 
   Future<bool> runCommandLine(
       {required String url, required String fileName}) async {
-    isExecuting.value = true;
+    recordState.value = RecordState.recording;
 
     Completer<bool> complete = Completer();
 
     final timeStamp = int.parse(selectionTimeObs.value) * recordMinutes;
 
-    final path = await _createDirectory();
+    final path = folderPathObs.value;
 
     final command =
         'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$fileName.mp4';
@@ -174,10 +229,14 @@ class MyHomeController extends GetxController {
     ).then((result) {
       if (result.exitCode == 0) {
         complete.complete(true);
-        isExecuting.value = false;
+        recordState.value = RecordState.recordFinished;
         fileNameController.text = '';
         videoPathObs.value = "$path\\$fileName.mp4";
-        folderPathObs.value = path;
+
+        Get.snackbar("", "Đã ghi video : ${videoPathObs.value}");
+        player.stop().whenComplete(() =>
+            player.open(Media("file:///${videoPathObs.value}"), play: false));
+
         log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPathObs.value}  ');
       } else {
         complete.complete(false);
@@ -215,7 +274,8 @@ class MyHomeController extends GetxController {
     aiFeatureList.value = result;
   }
 
-  void exportData() async {
+  Future<bool> exportData() async {
+    Completer<bool> completer = Completer();
     List<DetectionInfo> detections = [];
     for (var aiFeature in aiFeatureList) {
       if (aiFeature.isSelected == true && aiFeature.data.isNotEmpty == true) {
@@ -232,20 +292,27 @@ class MyHomeController extends GetxController {
     );
     /*
     {
-	"video_name":<string>,
-	"duration":<int>,
-	"detections":[
-		{
-		 "type":<string>,
-		 "events":[<string>]
-		}
-	],
-	"created_time":<int>
-}
+      "video_name":<string>,
+      "duration":<int>,
+      "detections":[
+        {
+        "type":<string>,
+        "events":[<string>]
+        }
+      ],
+      "created_time":<int>
+    }
      */
     log('$runtimeType, Export data: ${videoInfo.toString()}');
     final file = File("${folderPathObs.value}/${fileNameObs.value}.txt");
-    file.writeAsString(videoInfo.toString());
+    file.writeAsString(videoInfo.toString()).then((e) {
+      log('$runtimeType, Export data file path: ${e.path}');
+      completer.complete(true);
+    }).catchError((e) {
+      log('$runtimeType, Export data error: ${e.toString()}');
+      completer.complete(false);
+    });
+    return completer.future;
   }
 
   void addData(

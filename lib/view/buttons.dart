@@ -1,11 +1,10 @@
 import 'dart:developer';
-import 'dart:io';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../controller/my_home_controller.dart';
+import '../widgets/custom_dialog.dart';
 
 class PlayButton extends GetView<MyHomeController> {
   const PlayButton({
@@ -23,17 +22,17 @@ class PlayButton extends GetView<MyHomeController> {
             if (controller.videoPathObs.isEmpty) {
               return InkWell(
                 onTap: controller.urlValueObs.isNotEmpty
-                    ? (!controller.isExecuting.value
+                    ? (controller.recordState.value == RecordState.waiting
                         ? () async {
                             final recordResult = await controller.startRecord();
-                            if (recordResult) {
-                              Get.snackbar("",
-                                  "Đã ghi video vào thư mục: ${controller.videoPathObs.value}");
-                              controller.player
-                                  .stop()
-                                  .whenComplete(() => controller.replay());
-                            } else {
-                              log('$runtimeType,${DateTime.now()} recordResult : $recordResult');
+                            log('$runtimeType,${DateTime.now()} recordResult : $recordResult');
+                            if (recordResult == "NoPath") {
+                              Get.dialog(const CustomDialog(
+                                icon: Icon(Icons.warning_amber_rounded,
+                                    color: Colors.red, size: 50),
+                                title: "Bạn chưa chọn thư mục!",
+                                message: "Bạn phải chọn thư mục để lưu video!",
+                              ));
                             }
                           }
                         : () {
@@ -52,11 +51,12 @@ class PlayButton extends GetView<MyHomeController> {
                   alignment: Alignment.center,
                   child: Obx(
                     () => Row(
-                      mainAxisAlignment: controller.isExecuting.value
-                          ? MainAxisAlignment.spaceBetween
-                          : MainAxisAlignment.center,
+                      mainAxisAlignment:
+                          controller.recordState.value == RecordState.recording
+                              ? MainAxisAlignment.spaceBetween
+                              : MainAxisAlignment.center,
                       children: [
-                        controller.isExecuting.value
+                        controller.recordState.value == RecordState.recording
                             ? Container(
                                 height: 16,
                                 width: 16,
@@ -70,7 +70,9 @@ class PlayButton extends GetView<MyHomeController> {
                               )
                             : const SizedBox.shrink(),
                         Text(
-                          controller.isExecuting.value ? 'Đang ghi' : 'Bắt đầu',
+                          controller.recordState.value == RecordState.recording
+                              ? 'Đang ghi'
+                              : 'Bắt đầu',
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 16,
@@ -83,16 +85,18 @@ class PlayButton extends GetView<MyHomeController> {
               );
             }
             return InkWell(
-              onTap: controller.isReplay.value
+              onTap: controller.recordState.value == RecordState.replaying
                   ? null
                   : () {
-                      controller.player.play();
+                      controller.replay();
                     },
               child: Container(
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
-                  color: controller.isReplay.value ? Colors.grey : Colors.amber,
+                  color: controller.recordState.value == RecordState.replaying
+                      ? Colors.grey
+                      : Colors.amber,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,

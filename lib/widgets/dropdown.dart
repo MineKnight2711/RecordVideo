@@ -1,19 +1,19 @@
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 
-
 class DropDown extends StatefulWidget {
-
   final List<String> items;
   final String selectedValue;
   final Function(String) onChanged;
   final String title;
+  final bool isEnable;
   const DropDown({
     super.key,
     required this.items,
     required this.selectedValue,
     required this.onChanged,
     required this.title,
+    this.isEnable = true,
   });
 
   @override
@@ -25,10 +25,11 @@ class _DropDownState extends State<DropDown> {
   @override
   void initState() {
     setState(() {
-      selectedValue =  widget.selectedValue;
+      selectedValue = widget.selectedValue;
     });
     super.initState();
   }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -46,7 +47,7 @@ class _DropDownState extends State<DropDown> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton2<String>(
           isExpanded: true,
-          hint:  Row(
+          hint: Row(
             children: [
               const SizedBox(
                 width: 4,
@@ -66,8 +67,7 @@ class _DropDownState extends State<DropDown> {
           ),
           items: widget.items
               .map(
-                (String item) =>
-                DropdownMenuItem<String>(
+                (String item) => DropdownMenuItem<String>(
                   value: item,
                   child: Text(
                     item,
@@ -79,15 +79,17 @@ class _DropDownState extends State<DropDown> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-          )
+              )
               .toList(),
           value: selectedValue,
-          onChanged: (value) {
-            setState(() {
-              selectedValue =  value ?? '';
-            });
-            widget.onChanged.call(value ?? '');
-          },
+          onChanged: widget.isEnable
+              ? (value) {
+                  setState(() {
+                    selectedValue = value ?? '';
+                  });
+                  widget.onChanged.call(value ?? '');
+                }
+              : null,
         ),
       ),
     );

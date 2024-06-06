@@ -1,11 +1,10 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:record_video/widgets/dropdown.dart';
 import '../controller/my_home_controller.dart';
+import '../widgets/custom_dialog.dart';
 import 'ai_feature_list.dart';
 import 'buttons.dart';
 
@@ -16,7 +15,6 @@ class MyHomePage extends GetView<MyHomeController> {
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
-    log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${controller.videoPathObs.value}  ');
     return Scaffold(
       body: Container(
         color: Colors.grey.withOpacity(0.1),
@@ -28,7 +26,7 @@ class MyHomePage extends GetView<MyHomeController> {
               width: width * 0.7,
               height: height,
               padding: const EdgeInsets.symmetric(
-                vertical: 24,
+                vertical: 10,
                 horizontal: 24,
               ),
               child: Column(
@@ -36,32 +34,41 @@ class MyHomePage extends GetView<MyHomeController> {
                   children: [
                     SizedBox(
                       width: width * 0.7 * 0.7,
-                      child: TextField(
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                              RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
-                        ],
-                        decoration:
-                            const InputDecoration(hintText: 'Tên file...'),
-                        controller: controller.fileNameController,
-                        onChanged: (value) {
-                          controller.onFileNameChange(value: value);
-                        },
+                      child: Obx(
+                        () => TextField(
+                          enabled: controller.recordState.value !=
+                              RecordState.recording,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
+                          ],
+                          decoration:
+                              const InputDecoration(hintText: 'Tên file...'),
+                          controller: controller.fileNameController,
+                          onChanged: (value) {
+                            controller.onFileNameChange(value: value);
+                          },
+                        ),
                       ),
                     ),
+
                     SizedBox(
                       height: 48,
                       child: Row(
                         children: [
                           SizedBox(
                             width: width * 0.7 * 0.7,
-                            child: TextField(
-                              decoration:
-                                  const InputDecoration(hintText: 'Rtsp url'),
-                              controller: controller.urlController,
-                              onChanged: (value) {
-                                controller.onUrlChange(value: value);
-                              },
+                            child: Obx(
+                              () => TextField(
+                                enabled: controller.recordState.value !=
+                                    RecordState.recording,
+                                decoration:
+                                    const InputDecoration(hintText: 'Rtsp url'),
+                                controller: controller.urlController,
+                                onChanged: (value) {
+                                  controller.onUrlChange(value: value);
+                                },
+                              ),
                             ),
                           ),
                           const SizedBox(
@@ -71,14 +78,17 @@ class MyHomePage extends GetView<MyHomeController> {
                             child: Obx(
                               () {
                                 return DropDown(
-                                    title: 'Chọn thời gian',
-                                    items: List.generate(
-                                        5, (index) => (index + 1).toString()),
-                                    selectedValue:
-                                        controller.selectionTimeObs.value,
-                                    onChanged: (value) {
-                                      controller.onTimeChange(value: value);
-                                    });
+                                  isEnable: controller.recordState.value !=
+                                      RecordState.recording,
+                                  title: 'Chọn thời gian',
+                                  items: List.generate(
+                                      5, (index) => (index + 1).toString()),
+                                  selectedValue:
+                                      controller.selectionTimeObs.value,
+                                  onChanged: (value) {
+                                    controller.onTimeChange(value: value);
+                                  },
+                                );
                               },
                             ),
                           ),
@@ -93,7 +103,66 @@ class MyHomePage extends GetView<MyHomeController> {
                         ],
                       ),
                     ),
-
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: width * 0.7 * 0.7,
+                          child: TextField(
+                            decoration:
+                                const InputDecoration(hintText: 'Đường dẫn...'),
+                            controller: controller.folderPathController,
+                            readOnly: true,
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.only(left: 30, top: 10),
+                          height: 40,
+                          child: Obx(
+                            () => ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    controller.folderPathObs.value.isEmpty
+                                        ? Colors.amber
+                                        : Colors.grey,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed: controller.recordState.value !=
+                                      RecordState.recording
+                                  ? controller.folderPathObs.value.isEmpty
+                                      ? () => controller.selectDirectory()
+                                      : () => Get.dialog(
+                                            CustomDialog(
+                                              title:
+                                                  "Đường dẫn hiện tại\n${controller.folderPathObs.value}",
+                                              message:
+                                                  "Bạn có muốn chọn thư mục khác không?",
+                                              icon: const Icon(
+                                                Icons.help_outline_rounded,
+                                                color: Colors.blue,
+                                                size: 50,
+                                              ),
+                                              onOkPressed: () {
+                                                Get.back();
+                                                controller.selectDirectory();
+                                              },
+                                              showCancelButton: true,
+                                            ),
+                                          )
+                                  : null,
+                              child: const Text(
+                                "Chọn thư mục",
+                                style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w400),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(
                       height: 16,
                     ),
