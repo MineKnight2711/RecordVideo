@@ -5,6 +5,6 @@ import 'package:record_video/view/app.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+
   runApp(const App());
 }
-

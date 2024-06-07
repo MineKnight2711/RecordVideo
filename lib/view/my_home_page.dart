@@ -174,7 +174,7 @@ class MyHomePage extends GetView<MyHomeController> {
                     ),
                     // camera view
                     Container(
-                      width: width * 0.6,
+                      width: width * 1,
                       height: width * 0.6 * 9 / 16,
                       alignment: Alignment.topLeft,
                       child: Video(

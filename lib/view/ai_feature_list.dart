@@ -63,12 +63,19 @@ class AiFeatureList extends StatelessWidget {
           Container(
             margin: const EdgeInsets.symmetric(vertical: 24),
             height: 40,
+            width: 300,
             child: Obx(
               () {
                 final canExportData = controller.urlValueObs.isNotEmpty &&
                     !controller.checkFeatureList() &&
                     controller.videoPathObs.value.isNotEmpty;
-                return TextButton(
+                return ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   onPressed: canExportData
                       ? () async {
                           final exportResult = await controller.exportData();
@@ -99,18 +106,11 @@ class AiFeatureList extends StatelessWidget {
                           }
                         }
                       : null,
-                  child: Container(
-                    decoration: BoxDecoration(
-                        color: canExportData ? Colors.amber : Colors.grey,
-                        borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 100, vertical: 8),
-                    child: const Text(
-                      'Xuất dữ liệu',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16,
-                      ),
+                  child: const Text(
+                    'Xuất dữ liệu',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
                     ),
                   ),
                 );

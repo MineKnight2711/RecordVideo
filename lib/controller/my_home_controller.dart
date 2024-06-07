@@ -19,7 +19,7 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 60;
+const int recordMinutes = 10;
 const defaultFps = 15;
 const url =
     "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
@@ -30,7 +30,6 @@ class MyHomeController extends GetxController {
   late final Player player;
 
   late final VideoController playerController;
-
   TextEditingController urlController = TextEditingController();
   TextEditingController fileNameController = TextEditingController();
   TextEditingController folderPathController = TextEditingController();
@@ -51,6 +50,7 @@ class MyHomeController extends GetxController {
     super.onInit();
     _initData();
     _initControllerAndPlayer();
+    _createListenerStream();
   }
 
   @override
@@ -72,20 +72,29 @@ class MyHomeController extends GetxController {
         enableHardwareAcceleration: true,
       ),
     );
+  }
 
+  void _createListenerStream() {
     player.stream.log.listen((data) {
       final text = data.text;
+
+      log('$runtimeType,  ${DateTime.now()} listenerStream: $text');
+      if (text.contains("Opening failed or was aborted")) {
+        log('$runtimeType,  ${DateTime.now()} listenerStream:wrong url');
+      }
       if (text.contains('Container reported FPS')) {
         final fps =
             double.parse(text.substring('Container reported FPS: '.length));
 
-        log('$runtimeType,  ${DateTime.now()} Container reported FPS: $fps');
+        log('$runtimeType,  ${DateTime.now()} listenerStream: fps $fps');
+        log('$runtimeType,  ${DateTime.now()} listenerStream: recordState ${recordState.value}');
         // if fps = 15 start command record video
-        if (fps == defaultFps) {
-          //Start command record video
-          runCommandLine(fileName: fileNameObs.value, url: urlValueObs.value);
-        } else {
-          // stopRecord();
+        if (recordState.value == RecordState.waiting) {
+          if (fps == defaultFps) {
+            runCommandLine(fileName: fileNameObs.value, url: urlValueObs.value);
+          } else {
+            stopRecord();
+          }
         }
       }
     });
@@ -115,7 +124,20 @@ class MyHomeController extends GetxController {
   // handle value change
   void onTimeChange({required String value}) {
     selectionTimeObs.value = value;
-    log('$runtimeType,  ${DateTime.now()} selectedValue: ${selectionTimeObs.value}');
+    log('$runtimeType,  ${DateTime.now()} onTimeChange value: ${selectionTimeObs.value}');
+  }
+
+  void onUrlChange({required String value}) {
+    urlValueObs.value = value;
+    log('$runtimeType, onUrlChange value: ${urlValueObs.value}');
+  }
+
+  void onFileNameChange({required String value}) {
+    value = value.replaceAll(' ', '_');
+
+    fileNameController.text =
+        fileNameObs.value = value.isNotEmpty ? value : _formattedDate();
+    log('$runtimeType, onFileNameChange value: ${fileNameObs.value}');
   }
 
   void replay() {
@@ -139,18 +161,23 @@ class MyHomeController extends GetxController {
   }
 
   Future<String> startRecord() async {
+    Completer<String> completer = Completer();
     if (folderPathObs.value.isEmpty) {
       return "NoPath";
     }
-    recordState.value = RecordState.recording;
-    log('$runtimeType, start record url: ${urlValueObs.value}, fileName  ');
     player.open(Media(urlValueObs.value));
-
-    // final runCommandResult = await runCommandLine(
-    //     url: urlValueObs.value, fileName: fileNameObs.value);
-    // log('$runtimeType, runCommandResult: $runCommandResult ');
-    // return runCommandResult;
-    return "";
+    final subcrition = player.stream.error.listen(null);
+    subcrition.onData((event) {
+      if (event.contains("Failed to") || event.contains("Cannot open file")) {
+        completer.complete("InvalidUrl");
+        stopRecord();
+        log('$runtimeType,${DateTime.now()} startRecord : InvalidUrl');
+      } else {
+        completer.complete("");
+        log('$runtimeType,${DateTime.now()} startRecord : $event');
+      }
+    });
+    return completer.future;
   }
 
   void selectDirectory() async {
@@ -209,11 +236,8 @@ class MyHomeController extends GetxController {
     _initData();
   }
 
-  Future<bool> runCommandLine(
-      {required String url, required String fileName}) async {
+  void runCommandLine({required String url, required String fileName}) async {
     recordState.value = RecordState.recording;
-
-    Completer<bool> complete = Completer();
 
     final timeStamp = int.parse(selectionTimeObs.value) * recordMinutes;
 
@@ -228,7 +252,6 @@ class MyHomeController extends GetxController {
       [],
     ).then((result) {
       if (result.exitCode == 0) {
-        complete.complete(true);
         recordState.value = RecordState.recordFinished;
         fileNameController.text = '';
         videoPathObs.value = "$path\\$fileName.mp4";
@@ -239,28 +262,14 @@ class MyHomeController extends GetxController {
 
         log('$runtimeType,  ${DateTime.now()} runCommandLine video path: ${videoPathObs.value}  ');
       } else {
-        complete.complete(false);
         log('$runtimeType,  ${DateTime.now()} runCommandLine error: ${result.exitCode}  ');
       }
     });
-    // log('$runtimeType,  ${DateTime.now()} runCommandLine result: ${processResult.exitCode}  ');
-    return complete.future;
   }
 
   String _formattedDate() {
     final now = DateTime.now();
     return "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}-${now.second.toString().padLeft(2, '0')}";
-  }
-
-  void onUrlChange({required String value}) {
-    log('$runtimeType, On url change value: $value');
-    urlValueObs.value = value;
-  }
-
-  void onFileNameChange({required String value}) {
-    value = value.replaceAll(' ', '_');
-    log('$runtimeType, On url change value: $value');
-    fileNameObs.value = value;
   }
 
   void onClickExpand({required MultiChoiceItem aiFeature}) {
@@ -364,42 +373,42 @@ class MyHomeController extends GetxController {
     final result = <MultiChoiceItem>[];
     result.add(MultiChoiceItem(
       id: humanDetect,
-      title: 'Human Detect',
+      title: 'Phát hiện con người',
       isSelected: false,
       isExpanded: true,
       data: [],
     ));
     result.add(MultiChoiceItem(
       id: crowdDetect,
-      title: 'Crowd Detect',
+      title: 'Phát hiện đám đông',
       isSelected: false,
       isExpanded: true,
       data: [],
     ));
     result.add(MultiChoiceItem(
       id: licensePlate,
-      title: 'License Plate',
+      title: 'Biển số xe',
       isSelected: false,
       isExpanded: true,
       data: [],
     ));
     result.add(MultiChoiceItem(
       id: faceDetect,
-      title: 'Face Detect',
+      title: 'Nhận diện khuôn mặt',
       isSelected: false,
       isExpanded: true,
       data: [],
     ));
     result.add(MultiChoiceItem(
       id: fireDetect,
-      title: 'Fire Detect',
+      title: 'Phát hiện cháy',
       isSelected: false,
       isExpanded: true,
       data: [],
     ));
     result.add(MultiChoiceItem(
       id: fallDetect,
-      title: 'Fall Detect',
+      title: 'Phát hiện người ngã',
       isSelected: false,
       isExpanded: true,
       data: [],
