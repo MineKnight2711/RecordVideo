@@ -173,22 +173,24 @@ class MyHomePage extends GetView<MyHomeController> {
                       height: 16,
                     ),
                     // camera view
-                    Container(
-                      width: width * 1,
-                      height: width * 0.6 * 9 / 16,
-                      alignment: Alignment.topLeft,
-                      child: Video(
-                        width: (width / 2) * 16 / 9,
-                        wakelock: true,
-                        aspectRatio: 16 / 9,
-                        controller: controller.playerController,
-                        controls: (state) {
-                          return Obx(
-                            () => controller.videoPathObs.value.isEmpty
-                                ? const SizedBox()
-                                : AdaptiveVideoControls(state),
-                          );
-                        },
+                    Center(
+                      child: Container(
+                        width: width * 0.6,
+                        height: width * 0.6 * 9 / 16,
+                        alignment: Alignment.topLeft,
+                        child: Video(
+                          width: (width / 2) * 16 / 9,
+                          wakelock: true,
+                          aspectRatio: 16 / 9,
+                          controller: controller.playerController,
+                          controls: (state) {
+                            return Obx(
+                              () => controller.videoPathObs.value.isEmpty
+                                  ? const SizedBox()
+                                  : AdaptiveVideoControls(state),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ]),
