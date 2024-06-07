@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:record_video/models/models.dart';
 part 'video_info.g.dart';
+
 @JsonSerializable(ignoreUnannotated: true)
-class VideoInfo extends Equatable{
+// ignore: must_be_immutable
+class VideoInfo extends Equatable {
   @JsonKey(name: 'video_name')
   String? videoName;
 
@@ -22,7 +24,7 @@ class VideoInfo extends Equatable{
     this.detections,
     this.duration,
     this.videoName,
-});
+  });
 
   factory VideoInfo.fromJson(Map<String, dynamic> json) =>
       _$VideoInfoFromJson(json);
@@ -31,15 +33,14 @@ class VideoInfo extends Equatable{
 
   @override
   List<Object?> get props => [
-    createdTime,
-    detections,
-    duration,
-    videoName,
-  ];
+        createdTime,
+        detections,
+        duration,
+        videoName,
+      ];
 
   @override
   String toString() {
-   return jsonEncode(this);
+    return jsonEncode(this);
   }
-
 }

@@ -4,6 +4,7 @@ import 'package:record_video/models/models.dart';
 
 part 'detection_info.g.dart';
 @JsonSerializable(ignoreUnannotated: true)
+// ignore: must_be_immutable
 class DetectionInfo extends Equatable{
 
   @JsonKey(name: 'type')
