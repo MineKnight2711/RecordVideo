@@ -105,14 +105,17 @@ class MyHomeController extends GetxController {
     selectionTimeObs.value = '1';
     videoPathObs.value = folderPathObs.value = folderPathController.text = '';
     fileNameObs.value = fileNameController.text = _formattedDate();
-    urlValueObs.value = urlController.text = defaultUrl;
+    if(urlValueObs.value.isEmpty == true){
+urlValueObs.value = urlController.text = defaultUrl;
+    }
+  
     aiFeatureList.clear();
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
 
   void _initData() {
     fileNameController.text = fileNameObs.value = _formattedDate();
-    if (urlController.text.isNotEmpty) {
+    if (urlValueObs.value.isEmpty == true) {
       urlValueObs.value = urlController.text = defaultUrl;
     }
     aiFeatureList.value = _generateMultiChoiceItemList();

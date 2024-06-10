@@ -112,6 +112,9 @@ class MyHomePage extends GetView<MyHomeController> {
                                 const InputDecoration(hintText: 'Đường dẫn...'),
                             controller: controller.folderPathController,
                             readOnly: true,
+                          // onChanged:(value){
+                          //   controller.onUrlChange(value: value);
+                          // }
                           ),
                         ),
                         Container(
