@@ -21,7 +21,7 @@ const fallDetect = 'FALLING_DETECTED';
 
 const int recordMinutes = 60;
 const defaultFps = 15;
-const url =
+const defaultUrl =
     "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
 
 enum RecordState { waiting, recording, recordFinished, replaying }
@@ -105,15 +105,16 @@ class MyHomeController extends GetxController {
     selectionTimeObs.value = '1';
     videoPathObs.value = folderPathObs.value = folderPathController.text = '';
     fileNameObs.value = fileNameController.text = _formattedDate();
-    urlValueObs.value = url;
+    urlValueObs.value = urlController.text = defaultUrl;
     aiFeatureList.clear();
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
 
   void _initData() {
     fileNameController.text = fileNameObs.value = _formattedDate();
-    urlValueObs.value = urlController.text = url;
-
+    if (urlController.text.isNotEmpty) {
+      urlValueObs.value = urlController.text = defaultUrl;
+    }
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
 
@@ -165,6 +166,7 @@ class MyHomeController extends GetxController {
     if (folderPathObs.value.isEmpty) {
       return "NoPath";
     }
+    log('$runtimeType,${DateTime.now()} startRecord url : ${urlValueObs.value}');
     player.open(Media(urlValueObs.value));
     final subcrition = player.stream.error.listen(null);
     subcrition.onData((event) {
