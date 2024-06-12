@@ -126,8 +126,8 @@ class MyHomePage extends GetView<MyHomeController> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              onPressed: controller.recordState.value !=
-                                      RecordState.recording
+                              onPressed: controller.recordState.value ==
+                                      RecordState.waiting
                                   ? controller.folderPathObs.value.isEmpty
                                       ? () {
                                           seletedDirectory();
