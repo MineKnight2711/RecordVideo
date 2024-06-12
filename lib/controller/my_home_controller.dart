@@ -19,7 +19,7 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 10;
+const int recordMinutes = 60;
 const defaultFps = 15;
 const defaultUrl =
     "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
@@ -30,9 +30,9 @@ class MyHomeController extends GetxController {
   late final Player player;
 
   late final VideoController playerController;
-  TextEditingController urlController = TextEditingController();
-  TextEditingController fileNameController = TextEditingController();
-  TextEditingController folderPathController = TextEditingController();
+  final TextEditingController urlController = TextEditingController();
+  final TextEditingController fileNameController = TextEditingController();
+  final TextEditingController folderPathController = TextEditingController();
 
   //obs
   final recordState = RecordState.waiting.obs;
@@ -79,9 +79,8 @@ class MyHomeController extends GetxController {
       final text = data.text;
 
       log('$runtimeType,  ${DateTime.now()} listenerStream: $text');
-      if (text.contains("Opening failed or was aborted")) {
-        log('$runtimeType,  ${DateTime.now()} listenerStream:wrong url');
-      }
+      log('$runtimeType,  ${DateTime.now()} listenerStream Record State: ${recordState.value}');
+
       if (text.contains('Container reported FPS')) {
         final fps =
             double.parse(text.substring('Container reported FPS: '.length));
@@ -101,16 +100,18 @@ class MyHomeController extends GetxController {
   }
 
   void _refreshData() {
-    recordState.value = RecordState.waiting;
     selectionTimeObs.value = '1';
-    videoPathObs.value = folderPathObs.value = folderPathController.text = '';
+    if (videoPathObs.value.isEmpty) {
+      videoPathObs.value = folderPathObs.value = folderPathController.text = '';
+    }
     fileNameObs.value = fileNameController.text = _formattedDate();
-    if (urlValueObs.value.isEmpty == true) {
+    if (urlValueObs.value.isEmpty) {
       urlValueObs.value = urlController.text = defaultUrl;
     }
 
     aiFeatureList.clear();
     aiFeatureList.value = _generateMultiChoiceItemList();
+    log('$runtimeType,  ${DateTime.now()} _refreshData Record State: ${recordState.value}');
   }
 
   void _initData() {
@@ -154,8 +155,6 @@ class MyHomeController extends GetxController {
           () => player.stream.completed.listen((event) {
             if (event) {
               recordState.value = RecordState.recordFinished;
-            } else {
-              recordState.value = RecordState.replaying;
             }
             log('$runtimeType,  ${DateTime.now()} replay completed: ${recordState.value}');
           }),
@@ -330,6 +329,8 @@ class MyHomeController extends GetxController {
     file.writeAsString(videoInfo.toString()).then((e) {
       log('$runtimeType, Export data file path: ${e.path}');
       completer.complete(true);
+      recordState.value = RecordState.waiting;
+      refresh();
     }).catchError((e) {
       log('$runtimeType, Export data error: ${e.toString()}');
       completer.complete(false);

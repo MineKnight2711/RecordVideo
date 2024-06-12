@@ -184,9 +184,12 @@ class MyHomePage extends GetView<MyHomeController> {
                           controller: controller.playerController,
                           controls: (state) {
                             return Obx(
-                              () => controller.videoPathObs.value.isEmpty
-                                  ? const SizedBox()
-                                  : AdaptiveVideoControls(state),
+                              () => controller.recordState.value ==
+                                          RecordState.recordFinished ||
+                                      controller.recordState.value ==
+                                          RecordState.replaying
+                                  ? AdaptiveVideoControls(state)
+                                  : const SizedBox(),
                             );
                           },
                         ),

@@ -66,9 +66,8 @@ class AiFeatureList extends StatelessWidget {
             width: 300,
             child: Obx(
               () {
-                final canExportData = controller.urlValueObs.isNotEmpty &&
-                    !controller.checkFeatureList() &&
-                    controller.videoPathObs.value.isNotEmpty;
+                final canExportData = !controller.checkFeatureList() &&
+                    controller.recordState.value == RecordState.recordFinished;
                 return ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.amber,
@@ -80,18 +79,12 @@ class AiFeatureList extends StatelessWidget {
                       ? () async {
                           final exportResult = await controller.exportData();
                           if (exportResult) {
-                            Get.dialog(CustomDialog(
-                              icon: const Icon(Icons.check_circle_outline,
+                            Get.dialog(const CustomDialog(
+                              icon: Icon(Icons.check_circle_outline,
                                   color: Colors.green, size: 50),
                               title: "Xuất dữ liệu thành công!",
                               message: "Dữ liệu đã được xuất ra file!",
-                              onOkPressed: () {
-                                Get.back();
-                                //Mở file
-                              },
-                            )).whenComplete(() {
-                              controller.refresh();
-                            });
+                            ));
                           } else {
                             Get.dialog(CustomDialog(
                               icon: const Icon(Icons.check_circle_outline,

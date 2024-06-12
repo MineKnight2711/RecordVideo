@@ -18,7 +18,8 @@ class PlayButton extends GetView<MyHomeController> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 200),
         child: Obx(() {
-          if (controller.videoPathObs.isEmpty) {
+          if (controller.recordState.value == RecordState.waiting ||
+              controller.recordState.value == RecordState.recording) {
             return SizedBox(
               height: size.height * 0.05,
               width: size.width * 0.15,
