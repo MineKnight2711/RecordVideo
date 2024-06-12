@@ -20,7 +20,7 @@ class CustomDialog extends StatelessWidget {
       backgroundColor: Colors.transparent,
       child: Container(
         width: 350,
-        height: 200,
+        height: 230,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
             color: Colors.white, borderRadius: BorderRadius.circular(20)),

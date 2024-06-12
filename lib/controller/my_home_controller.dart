@@ -19,7 +19,7 @@ const faceDetect = 'FACE_DETECTED';
 const fireDetect = 'FIRE_DETECTED';
 const fallDetect = 'FALLING_DETECTED';
 
-const int recordMinutes = 60;
+const int recordMinutes = 10;
 const defaultFps = 15;
 const defaultUrl =
     "rtsp://admin:Insen181@192.168.1.8:5541/cam/realmonitor?channel=1&subtype=1";
@@ -105,10 +105,10 @@ class MyHomeController extends GetxController {
     selectionTimeObs.value = '1';
     videoPathObs.value = folderPathObs.value = folderPathController.text = '';
     fileNameObs.value = fileNameController.text = _formattedDate();
-    if(urlValueObs.value.isEmpty == true){
-urlValueObs.value = urlController.text = defaultUrl;
+    if (urlValueObs.value.isEmpty == true) {
+      urlValueObs.value = urlController.text = defaultUrl;
     }
-  
+
     aiFeatureList.clear();
     aiFeatureList.value = _generateMultiChoiceItemList();
   }
@@ -126,22 +126,23 @@ urlValueObs.value = urlController.text = defaultUrl;
   }
 
   // handle value change
-  void onTimeChange({required String value}) {
+  void onTimeChange(String value) {
     selectionTimeObs.value = value;
     log('$runtimeType,  ${DateTime.now()} onTimeChange value: ${selectionTimeObs.value}');
   }
 
-  void onUrlChange({required String value}) {
+  void onUrlChange(String value) {
     urlValueObs.value = value;
     log('$runtimeType, onUrlChange value: ${urlValueObs.value}');
   }
 
-  void onFileNameChange({required String value}) {
+  void onFileNameChange(String value) {
     value = value.replaceAll(' ', '_');
 
     fileNameController.text =
         fileNameObs.value = value.isNotEmpty ? value : _formattedDate();
-    log('$runtimeType, onFileNameChange value: ${fileNameObs.value}');
+    log('$runtimeType, onFileNameChange text controller value: ${fileNameController.text}');
+    log('$runtimeType, onFileNameChange  obs value: ${fileNameObs.value}');
   }
 
   void replay() {
@@ -185,13 +186,20 @@ urlValueObs.value = urlController.text = defaultUrl;
     return completer.future;
   }
 
-  void selectDirectory() async {
+  Future<String> selectDirectory() async {
     String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
 
     if (selectedDirectory != null) {
+      // Check if the selectedDirectory contains any special Unicode characters or whitespace
+      if (RegExp("[ \u00C0-\u1EF9]").hasMatch(selectedDirectory)) {
+        log('$runtimeType,${DateTime.now()} Invalid directory path : $selectedDirectory');
+        return "InvalidDirectory";
+      }
       log('$runtimeType,${DateTime.now()} file path : $selectedDirectory');
       folderPathController.text = folderPathObs.value = selectedDirectory;
+      return "Success";
     }
+    return "NoSeletedDirectory";
   }
 
   // Future<String> _setDefaultDirectory() async {
@@ -209,36 +217,39 @@ urlValueObs.value = urlController.text = defaultUrl;
   //   return path;
   // }
 
-  void stopRecord() async {
-    log('$runtimeType,  ${DateTime.now()} stop record');
-    // stop strea,
+  Future stopRecord() async {
+    // stop stream,
     player.stop();
+    //Change record state
     recordState.value = RecordState.waiting;
-    final path = "${folderPathObs.value}\\${fileNameObs.value}.mp4";
-    final cmd = 'del $path';
 
+    final deleteFileCommand =
+        "del ${folderPathObs.value}\\${fileNameObs.value}.mp4";
+
+    const killFFmpegTaskCommand = 'taskkill /IM "ffmpeg.exe" /F';
     // delete file
-    log('$runtimeType,  ${DateTime.now()} stop record cmd:$cmd');
+    log('$runtimeType,  ${DateTime.now()} stopRecord cmd:$deleteFileCommand');
 
     try {
       // stop command
-      await Process.run(
-        'taskkill /IM "ffmpeg.exe" /F',
-        [],
-      ).then((result) {
-        log('$runtimeType,  ${DateTime.now()} stop record exit code:${result.exitCode}');
-        Process.run(
-          runInShell: true,
-          cmd,
-          [],
-        ).then((result1) => log(
-            '$runtimeType,  ${DateTime.now()} stop record delete file exit code:${result1.exitCode}'));
-      });
+      await runProcess(killFFmpegTaskCommand).then((result) => log(
+          '$runtimeType,  ${DateTime.now()} stopRecord kill process error:${result.stderr}'));
+      await runProcess(deleteFileCommand, runInSheel: true).then((result) => log(
+          '$runtimeType,  ${DateTime.now()} stopRecord kill process error:${result.stderr}'));
     } catch (e) {
-      log('$runtimeType,  ${DateTime.now()} stop record error:${e.toString()}');
+      log('$runtimeType,  ${DateTime.now()} stop record uncatch exception:${e.toString()}');
     }
     // reinit data
     _initData();
+  }
+
+  Future<ProcessResult> runProcess(String command,
+      {bool runInSheel = false}) async {
+    return await Process.run(
+      runInShell: runInSheel,
+      command,
+      [],
+    );
   }
 
   void runCommandLine({required String url, required String fileName}) async {
@@ -252,10 +263,7 @@ urlValueObs.value = urlController.text = defaultUrl;
         'ffmpeg -i "$url" -reset_timestamps 1 -c copy -f segment -strftime 1 -segment_time $timeStamp -t $timeStamp $path\\$fileName.mp4';
     log('$runtimeType,  ${DateTime.now()} runCommandLine : $command ');
 
-    await Process.run(
-      command,
-      [],
-    ).then((result) {
+    await runProcess(command).then((result) {
       if (result.exitCode == 0) {
         recordState.value = RecordState.recordFinished;
         fileNameController.text = '';

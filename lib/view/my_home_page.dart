@@ -40,14 +40,12 @@ class MyHomePage extends GetView<MyHomeController> {
                               RecordState.recording,
                           inputFormatters: [
                             FilteringTextInputFormatter.allow(
-                                RegExp("[0-9a-zA-Z \u00C0-\u1EF9]")),
+                                RegExp("[0-9a-zA-Z_\\- \u00C0-\u1EF9]")),
                           ],
                           decoration:
                               const InputDecoration(hintText: 'Tên file...'),
                           controller: controller.fileNameController,
-                          onChanged: (value) {
-                            controller.onFileNameChange(value: value);
-                          },
+                          onChanged: controller.onFileNameChange,
                         ),
                       ),
                     ),
@@ -65,9 +63,7 @@ class MyHomePage extends GetView<MyHomeController> {
                                 decoration:
                                     const InputDecoration(hintText: 'Rtsp url'),
                                 controller: controller.urlController,
-                                onChanged: (value) {
-                                  controller.onUrlChange(value: value);
-                                },
+                                onChanged: controller.onUrlChange,
                               ),
                             ),
                           ),
@@ -85,9 +81,7 @@ class MyHomePage extends GetView<MyHomeController> {
                                       5, (index) => (index + 1).toString()),
                                   selectedValue:
                                       controller.selectionTimeObs.value,
-                                  onChanged: (value) {
-                                    controller.onTimeChange(value: value);
-                                  },
+                                  onChanged: controller.onTimeChange,
                                 );
                               },
                             ),
@@ -112,14 +106,15 @@ class MyHomePage extends GetView<MyHomeController> {
                                 const InputDecoration(hintText: 'Đường dẫn...'),
                             controller: controller.folderPathController,
                             readOnly: true,
-                          // onChanged:(value){
-                          //   controller.onUrlChange(value: value);
-                          // }
+                            // onChanged:(value){
+                            //   controller.onUrlChange(value: value);
+                            // }
                           ),
                         ),
                         Container(
                           margin: const EdgeInsets.only(left: 30, top: 10),
-                          height: 40,
+                          height: height * 0.05,
+                          width: width * 0.13,
                           child: Obx(
                             () => ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -134,7 +129,9 @@ class MyHomePage extends GetView<MyHomeController> {
                               onPressed: controller.recordState.value !=
                                       RecordState.recording
                                   ? controller.folderPathObs.value.isEmpty
-                                      ? () => controller.selectDirectory()
+                                      ? () {
+                                          seletedDirectory();
+                                        }
                                       : () => Get.dialog(
                                             CustomDialog(
                                               title:
@@ -147,8 +144,7 @@ class MyHomePage extends GetView<MyHomeController> {
                                                 size: 50,
                                               ),
                                               onOkPressed: () {
-                                                Get.back();
-                                                controller.selectDirectory();
+                                                seletedDirectory();
                                               },
                                               showCancelButton: true,
                                             ),
@@ -213,5 +209,34 @@ class MyHomePage extends GetView<MyHomeController> {
         ),
       ),
     );
+  }
+
+  seletedDirectory() async {
+    final result = await controller.selectDirectory();
+    switch (result) {
+      case "Success":
+        Get.back();
+        break;
+      case "InvalidDirectory":
+        Get.dialog(
+          const CustomDialog(
+            title: "Lỗi",
+            message:
+                "Tên thư mục không được chứa khoảng trắng hoặc ký tự đặc biệt!\n Video sẽ không được lưu!",
+            icon: Icon(
+              Icons.help_outline_rounded,
+              color: Colors.blue,
+              size: 50,
+            ),
+            showCancelButton: true,
+          ),
+        );
+        break;
+      case "NoSeletedDirectory":
+        //Xử lý không chọn thư mục nào
+        Get.back();
+        break;
+      default:
+    }
   }
 }
