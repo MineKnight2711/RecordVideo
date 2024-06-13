@@ -90,6 +90,12 @@ class MyHomeController extends GetxController {
         // if fps = 15 start command record video
         if (recordState.value == RecordState.waiting) {
           if (fps == defaultFps) {
+            if (!_checkDirectory(folderPathObs.value)) {
+              Get.snackbar(
+                  "Lỗi", "Đường dẫn không hợp lệ vui lòng chọn lại đường dẫn");
+              stopRecord();
+              return;
+            }
             runCommandLine(fileName: fileNameObs.value, url: urlValueObs.value);
           } else {
             stopRecord();
@@ -277,6 +283,11 @@ class MyHomeController extends GetxController {
         log('$runtimeType,  ${DateTime.now()} runCommandLine error: ${result.exitCode}  ');
       }
     });
+  }
+
+  bool _checkDirectory(String path) {
+    final directory = Directory(path);
+    return directory.existsSync();
   }
 
   String _formattedDate() {
